@@ -15,9 +15,12 @@ This is my team
 - [ECE Senior Design Piazza Site](https://piazza.com/bu/fall2025/ec463/home)
 - [Blackboard](http://learn.bu.edu/)
 
-
 ## Optional features links
 - Team Jira
 - Team Confluence
 - Something else
+
+## Project Description
+Our project aims to develop an algorithm that will be used in speech therapy to compare pronunciation of words from speech therapists and the pronunciation spoken by children to help the children’s vocalizations to be more similar to the model diction.
+
 
