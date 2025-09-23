@@ -23,4 +23,11 @@ This is my team
 ## Project Description
 Our project aims to develop an algorithm that will be used in speech therapy to compare pronunciation of words from speech therapists and the pronunciation spoken by children to help the children’s vocalizations to be more similar to the model diction.
 
-
+## Project Visualization
+This figure provides a high-level overview of the app’s logic and main process flow.
+<p align="center">
+<img src="./images/GeneralProcess_V1.drawio.png" width="50%">
+</p>
+<p align="center">
+Figure 1: Flowchart of the app's logic
+</p>
