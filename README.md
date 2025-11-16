@@ -1,15 +1,15 @@
-# 02-Team Repo
-Template for team repo
+# 01-Individual Repo
+Template for individual student repo
 
-<p align="center">
-<img src="./images/Team 29.jpg" width="50%">
-</p>
-<p align="center">
-This is my team
-</p>
+<img src="./images/myImage.jpg" width="20%">
+<p> This is me </p>
+
+## Individual links
+- [Log book](https://docs.google.com/document/d/15cfgFse6mM8uLjC5IGHQpjSQoLVGcz7nWKtJYX122q0/edit?usp=sharing)
+- [Individual Google Drive](https://drive.google.com/drive/u/0/folders/11mGg_rba5KUaP798EXQgKFHZkmzSVPFe)
 
 ## Team links
-- [Team Google Drive](https://drive.google.com/drive/folders/1Ac-iV2D9KQEg-vvfJxMU1BYvoQYRQEl0?usp=drive_link)
+- [Team Google Drive](https://drive.google.com/drive/u/0/folders/1Ac-iV2D9KQEg-vvfJxMU1BYvoQYRQEl0)
 
 ## Course links
 - [ECE Senior Design Piazza Site](https://piazza.com/bu/fall2025/ec463/home)
@@ -19,15 +19,3 @@ This is my team
 - Team Jira
 - Team Confluence
 - Something else
-
-## Project Description
-Our project aims to develop an algorithm that will be used in speech therapy to compare pronunciation of words from speech therapists and the pronunciation spoken by children to help the children’s vocalizations to be more similar to the model diction.
-
-## Project Visualization
-This figure provides a high-level overview of the app’s logic and main process flow.
-<p align="center">
-<img src="./images/GeneralProcess_V1.drawio.png" width="50%">
-</p>
-<p align="center">
-Figure 1: Flowchart of the app's logic
-</p>

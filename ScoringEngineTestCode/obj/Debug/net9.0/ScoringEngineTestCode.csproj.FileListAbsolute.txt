@@ -1,0 +1,15 @@
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\bin\Debug\net9.0\ScoringEngineTestCode.exe
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\bin\Debug\net9.0\ScoringEngineTestCode.deps.json
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\bin\Debug\net9.0\ScoringEngineTestCode.runtimeconfig.json
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\bin\Debug\net9.0\ScoringEngineTestCode.dll
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\bin\Debug\net9.0\ScoringEngineTestCode.pdb
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.AssemblyInfoInputs.cache
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.AssemblyInfo.cs
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.csproj.CoreCompileInputs.cache
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.sourcelink.json
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.dll
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\refint\ScoringEngineTestCode.dll
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.pdb
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ScoringEngineTestCode.genruntimeconfig.cache
+C:\Users\dksaa\Desktop\BU\SeniorDesign\ScoringEngineTest\ScoringEngineTestCode\obj\Debug\net9.0\ref\ScoringEngineTestCode.dll
