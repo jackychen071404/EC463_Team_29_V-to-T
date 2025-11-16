@@ -77,3 +77,7 @@ UserSettings/
 
 Assets/StreamingAssets/AudioDecoder_Tiny.sentis
 *.sentis
+# Ignore sentis model files completely
+Assets/sentis-whisper-tiny/models/*.sentis
+# Ignore their .meta files too
+Assets/sentis-whisper-tiny/models/*.sentis.meta
