@@ -15,6 +15,10 @@ This is my team
 - [ECE Senior Design Piazza Site](https://piazza.com/bu/fall2025/ec463/home)
 - [Blackboard](http://learn.bu.edu/)
 
+## Testing ground:
+(TODO: add other branches here)
+https://github.com/daarush/SpeechTherapyAppCore
+
 ## Optional features links
 - Team Jira
 - Team Confluence
