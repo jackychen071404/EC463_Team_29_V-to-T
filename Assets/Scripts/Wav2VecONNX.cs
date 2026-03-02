@@ -16,7 +16,8 @@ public class Wav2VecONNX : IDisposable
 
     private Model model;
     private Worker worker;
-    private Tensor<float> inputTensor;
+    private readonly bool enableDebugLogs;
+    private bool isDisposed;
 
     private readonly Dictionary<int, string> vocab = new Dictionary<int, string>
     {
@@ -33,12 +34,16 @@ public class Wav2VecONNX : IDisposable
 
     private const int BLANK_TOKEN_ID = 42; // [PAD] is blank token for CTC
 
-    public Wav2VecONNX(ModelAsset modelAsset)
+    public Wav2VecONNX(ModelAsset modelAsset, bool enableDetailedLogs = false)
     {
+        enableDebugLogs = enableDetailedLogs;
         wav2vec2ModelAsset = modelAsset ?? throw new ArgumentNullException(nameof(modelAsset));
+
+        LogDebug("Loading model asset...");
         model = ModelLoader.Load(wav2vec2ModelAsset);
+        LogDebug("Creating GPU worker...");
         worker = new Worker(model, BackendType.GPUCompute);
-        Debug.Log("Wav2Vec2 model loaded!");
+        Debug.Log("[Wav2VecONNX] Model loaded and GPU worker initialized.");
     }
 
     /// <summary>
@@ -82,20 +87,41 @@ public class Wav2VecONNX : IDisposable
 
     private string RunInference(float[] audioData)
     {
+        if (isDisposed)
+            throw new ObjectDisposedException(nameof(Wav2VecONNX));
+
+        LogDebug($"RunInference start. Samples={audioData.Length}");
         using (var inputTensor = new Tensor<float>(new TensorShape(1, audioData.Length), audioData))
         {
+            LogDebug("Input tensor created. Scheduling worker...");
             worker.Schedule(inputTensor);
+            LogDebug("Worker schedule complete. Reading output...");
 
-            // Get the output tensor and ensure it's disposed
             using (var outputTensor = worker.PeekOutput() as Tensor<float>)
             {
                 if (outputTensor == null)
                     throw new Exception("Failed to get output tensor");
 
+                LogDebug($"Output tensor acquired. Shape=[{outputTensor.shape[0]}, {outputTensor.shape[1]}, {outputTensor.shape[2]}]");
                 outputTensor.DownloadToArray();
+                LogDebug("Output tensor downloaded. Decoding CTC...");
                 return DecodeCTC(outputTensor);
             }
         }
+    }
+
+    public void WarmUp(int sampleCount = 16000)
+    {
+        if (isDisposed)
+            throw new ObjectDisposedException(nameof(Wav2VecONNX));
+
+        if (sampleCount < 1)
+            sampleCount = 16000;
+
+        LogDebug($"Warm-up start. sampleCount={sampleCount}");
+        var silent = new float[sampleCount];
+        var _ = RunInference(silent);
+        LogDebug("Warm-up complete.");
     }
 
     private string DecodeCTC(Tensor<float> logits)
@@ -220,7 +246,20 @@ public class Wav2VecONNX : IDisposable
 
     public void Dispose()
     {
-        inputTensor?.Dispose();
+        if (isDisposed)
+            return;
+
+        LogDebug("Disposing worker...");
         worker?.Dispose();
+        worker = null;
+        model = null;
+        isDisposed = true;
+        Debug.Log("[Wav2VecONNX] Worker disposed. GPU resources released.");
+    }
+
+    private void LogDebug(string message)
+    {
+        if (enableDebugLogs)
+            Debug.Log($"[Wav2VecONNX][DEBUG] {message}");
     }
 }
