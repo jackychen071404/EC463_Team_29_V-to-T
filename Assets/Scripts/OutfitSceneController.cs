@@ -102,9 +102,10 @@ public class OutfitSceneController : MonoBehaviour
     {
         HideFeedbackNow();
 
-        if (device == null)
+        if (VoiceRecorder.Instance == null)
         {
-            if (promptText) promptText.text = "Can't find a microphone.";
+            if (promptText) promptText.text = "VoiceRecorder not initialized.";
+            Debug.LogError("[OutfitSceneController] VoiceRecorder.Instance is null!");
             return;
         }
 
@@ -113,7 +114,9 @@ public class OutfitSceneController : MonoBehaviour
 
         SetMicUI(enabled: true, label: "Tap to Stop");
 
-        clip = Microphone.Start(device, false, Mathf.CeilToInt(maxRecordSeconds), recordHz);
+        // Start recording using VoiceRecorder
+        VoiceRecorder.Instance.StartRecording();
+        Debug.Log("[OutfitSceneController] Started recording.");
 
         if (autoStopCoroutine != null) StopCoroutine(autoStopCoroutine);
         autoStopCoroutine = StartCoroutine(AutoStopAfter(maxRecordSeconds));
@@ -141,28 +144,48 @@ public class OutfitSceneController : MonoBehaviour
 
         float listenedFor = Time.time - listenStartTime;
 
-        int pos = Microphone.GetPosition(device);
-        Microphone.End(device);
-
         if (listenedFor < minListenSeconds)
         {
             StartCoroutine(QuickRetry("Hold it for a sec"));
             return;
         }
 
-        if (pos <= 0 || clip == null)
+        // Stop and save recording
+        if (VoiceRecorder.Instance != null)
         {
-            ShowFeedback(0f, false, "I didn’t catch your voice, try again!");
-            busy = false;
-            SetMicUI(enabled: true, label: "Tap to Speak");
-            UpdatePrompt();
-            return;
+            VoiceRecorder.Instance.StopAndSaveRecording();
+            string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
+            Debug.Log($"[OutfitSceneController] Recording saved to: {recordingPath}");
+
+            // Get score from Wav2VecManager
+            if (Wav2VecManager.Instance != null)
+            {
+                string targetWord = GameManager.I.CurrentWord;
+                Debug.Log($"[OutfitSceneController] Requesting score for word: {targetWord}");
+                
+                Wav2VecManager.Instance.GetScoreFromFile(recordingPath, targetWord, OnScoreReceived);
+            }
+            else
+            {
+                Debug.LogError("[OutfitSceneController] Wav2VecManager.Instance is null!");
+                // Fallback to random score
+                float score = Random.Range(randomMinScore, randomMaxScore + 1);
+                OnScoreReceived(score);
+            }
         }
+        else
+        {
+            Debug.LogError("[OutfitSceneController] VoiceRecorder.Instance is null!");
+            // Fallback to random score
+            float score = Random.Range(randomMinScore, randomMaxScore + 1);
+            OnScoreReceived(score);
+        }
+    }
 
-        AudioClip trimmed = TrimClip(clip, pos);
-
-        // SCORING HERE
-        float score = Random.Range(randomMinScore, randomMaxScore + 1);
+    private void OnScoreReceived(float score)
+    {
+        Debug.Log($"[OutfitSceneController] Received score: {score}");
+        
         bool pass = score >= passThreshold;
 
         if (pass) HandlePass(score);
@@ -282,9 +305,9 @@ public class OutfitSceneController : MonoBehaviour
         HideFeedbackNow();
 
         // stop recording cleanly
-        if (isListening && device != null)
+        if (isListening && VoiceRecorder.Instance != null && VoiceRecorder.Instance.IsCurrentlyRecording())
         {
-            Microphone.End(device);
+            VoiceRecorder.Instance.StopAndSaveRecording();
             isListening = false;
         }
 

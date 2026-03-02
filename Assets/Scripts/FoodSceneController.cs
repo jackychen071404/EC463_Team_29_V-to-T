@@ -153,6 +153,17 @@ public class FoodSceneController : MonoBehaviour
             StopAllFailFeedback();
             if (feedbackText) feedbackText.text = "";
 
+            // Start recording
+            if (VoiceRecorder.Instance != null)
+            {
+                VoiceRecorder.Instance.StartRecording();
+                Debug.Log("[FoodSceneController] Started recording.");
+            }
+            else
+            {
+                Debug.LogError("[FoodSceneController] VoiceRecorder.Instance is null!");
+            }
+
             SetMicUI(enabled: true, label: "Tap to Stop");
             return;
         }
@@ -166,12 +177,52 @@ public class FoodSceneController : MonoBehaviour
         float listenedFor = Time.time - listenStartTime;
         if (listenedFor < minListenSeconds)
         {
+            // Stop recording but don't score
+            if (VoiceRecorder.Instance != null && VoiceRecorder.Instance.IsCurrentlyRecording())
+            {
+                VoiceRecorder.Instance.StopAndSaveRecording();
+            }
+            
             StartCoroutine(QuickRetry("Hold it for a sec"));
             return;
         }
 
-        // SCORING ALGORITHM WOULD GO HERE
-        float score = Random.Range(randomMinScore, randomMaxScore + 1);
+        // Stop recording and save
+        if (VoiceRecorder.Instance != null)
+        {
+            VoiceRecorder.Instance.StopAndSaveRecording();
+            string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
+            Debug.Log($"[FoodSceneController] Recording saved to: {recordingPath}");
+
+            // Get score from Wav2VecManager
+            if (Wav2VecManager.Instance != null)
+            {
+                string targetWord = CurrentWord();
+                Debug.Log($"[FoodSceneController] Requesting score for word: {targetWord}");
+                
+                Wav2VecManager.Instance.GetScoreFromFile(recordingPath, targetWord, OnScoreReceived);
+            }
+            else
+            {
+                Debug.LogError("[FoodSceneController] Wav2VecManager.Instance is null!");
+                // Fallback to random score
+                float score = Random.Range(randomMinScore, randomMaxScore + 1);
+                OnScoreReceived(score);
+            }
+        }
+        else
+        {
+            Debug.LogError("[FoodSceneController] VoiceRecorder.Instance is null!");
+            // Fallback to random score
+            float score = Random.Range(randomMinScore, randomMaxScore + 1);
+            OnScoreReceived(score);
+        }
+    }
+
+    private void OnScoreReceived(float score)
+    {
+        Debug.Log($"[FoodSceneController] Received score: {score}");
+        
         bool pass = score >= passThreshold;
 
         if (pass) ShowSuccess(score);
