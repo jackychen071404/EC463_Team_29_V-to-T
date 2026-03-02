@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.IO;
 
 public class VoiceRecorder : MonoBehaviour
@@ -8,9 +9,16 @@ public class VoiceRecorder : MonoBehaviour
     [Header("Recording Settings")]
     public float recordingDuration = 2f;  // Recording time in seconds
 
+    [Header("Microphone Stability")]
+    [SerializeField] private float androidSettleDelaySeconds = 0.2f;
+    [SerializeField] private float nonAndroidSettleDelaySeconds = 0.05f;
+    [SerializeField] private float micStartTimeoutSeconds = 1.5f;
+
     private AudioClip recording;
     private string micName;
     private bool isRecording = false;
+    private bool isPreparingMic = false;
+    private float nextStartAllowedAt = 0f;
     private int recordingCount = 0;
     private const int MAX_RECORDINGS = 5;
 
@@ -45,30 +53,51 @@ public class VoiceRecorder : MonoBehaviour
         }
     }
 
-    public void StartRecording()
+    public bool StartRecording()
     {
-        if (isRecording || micName == null)
+        if (micName == null)
         {
-            Debug.LogWarning("Cannot start recording - already recording or no microphone detected");
-            return;
+            Debug.LogWarning("Cannot start recording - no microphone detected");
+            return false;
         }
 
-        isRecording = true;
-        recording = Microphone.Start(micName, false, (int)recordingDuration, 44100);
-        Debug.Log("Recording started...");
+        if (isRecording || isPreparingMic)
+        {
+            Debug.LogWarning("Cannot start recording - microphone is already active or preparing");
+            return false;
+        }
+
+        StartCoroutine(StartRecordingRoutine());
+        return true;
     }
 
-    public void StopAndSaveRecording()
+    public bool StopAndSaveRecording()
     {
         if (!isRecording)
         {
             Debug.LogWarning("No recording in progress");
-            return;
+            return false;
         }
 
         int position = Microphone.GetPosition(micName);
-        Microphone.End(micName);
+        if (Microphone.IsRecording(micName))
+            Microphone.End(micName);
+
         isRecording = false;
+        nextStartAllowedAt = Time.unscaledTime + GetSettleDelay();
+
+        if (recording == null)
+        {
+            Debug.LogError("Recording clip is null after stopping microphone.");
+            return false;
+        }
+
+        if (position <= 0)
+        {
+            Debug.LogWarning("Recording contained no samples. Skipping WAV save.");
+            recording = null;
+            return false;
+        }
 
         // Trim the audio clip to actual recorded length
         float[] samples = new float[position * recording.channels];
@@ -84,12 +113,59 @@ public class VoiceRecorder : MonoBehaviour
         string filename = $"VoiceRecording_{recordingCount:D2}.wav";
         
         SaveWav(filename, trimmedClip);
+        recording = null;
         
         // Delete oldest file if we exceed the limit
         if (recordingCount > MAX_RECORDINGS)
         {
             DeleteOldestRecording();
         }
+
+        return true;
+    }
+
+    private IEnumerator StartRecordingRoutine()
+    {
+        isPreparingMic = true;
+
+        if (Microphone.IsRecording(micName))
+            Microphone.End(micName);
+
+        while (Time.unscaledTime < nextStartAllowedAt)
+            yield return null;
+
+        int targetFrequency = 44100;
+        recording = Microphone.Start(micName, false, Mathf.CeilToInt(recordingDuration), targetFrequency);
+
+        float timeoutAt = Time.unscaledTime + Mathf.Max(0.1f, micStartTimeoutSeconds);
+        while (Microphone.GetPosition(micName) <= 0)
+        {
+            if (Time.unscaledTime >= timeoutAt)
+            {
+                Debug.LogError("Microphone failed to initialize in time. Releasing session.");
+                if (Microphone.IsRecording(micName))
+                    Microphone.End(micName);
+
+                recording = null;
+                isPreparingMic = false;
+                isRecording = false;
+                nextStartAllowedAt = Time.unscaledTime + GetSettleDelay();
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        isRecording = true;
+        isPreparingMic = false;
+        Debug.Log("Recording started...");
+    }
+
+    private float GetSettleDelay()
+    {
+        return Application.platform == RuntimePlatform.Android
+            ? Mathf.Max(0f, androidSettleDelaySeconds)
+            : Mathf.Max(0f, nonAndroidSettleDelaySeconds);
     }
 
     private void LoadRecordingCount()
@@ -187,5 +263,24 @@ public class VoiceRecorder : MonoBehaviour
     public bool IsCurrentlyRecording()
     {
         return isRecording;
+    }
+
+    private void OnDisable()
+    {
+        ForceReleaseMicrophone();
+    }
+
+    private void OnDestroy()
+    {
+        ForceReleaseMicrophone();
+    }
+
+    private void ForceReleaseMicrophone()
+    {
+        if (!string.IsNullOrEmpty(micName) && Microphone.IsRecording(micName))
+            Microphone.End(micName);
+
+        isRecording = false;
+        isPreparingMic = false;
     }
 }

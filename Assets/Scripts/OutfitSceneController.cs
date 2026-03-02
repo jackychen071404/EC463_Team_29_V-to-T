@@ -153,7 +153,13 @@ public class OutfitSceneController : MonoBehaviour
         // Stop and save recording
         if (VoiceRecorder.Instance != null)
         {
-            VoiceRecorder.Instance.StopAndSaveRecording();
+            bool saved = VoiceRecorder.Instance.StopAndSaveRecording();
+            if (!saved)
+            {
+                StartCoroutine(QuickRetry("Mic not ready. Try again."));
+                return;
+            }
+
             string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
             Debug.Log($"[OutfitSceneController] Recording saved to: {recordingPath}");
 

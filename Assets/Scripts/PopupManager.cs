@@ -91,7 +91,13 @@ public class PopupManager : MonoBehaviour
         yield return new WaitForSeconds(VoiceRecorder.Instance.recordingDuration);
 
         // Stop and save recording
-        VoiceRecorder.Instance.StopAndSaveRecording();
+        bool saved = VoiceRecorder.Instance.StopAndSaveRecording();
+        if (!saved)
+        {
+            feedback.text = "Mic was not ready. Please try again.";
+            speak.interactable = true;
+            yield break;
+        }
 
         feedback.text = "Processing speech...";
 
