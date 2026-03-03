@@ -85,9 +85,9 @@ public static class PhonemeScoringEngine
         {
             for (int j = 1; j < m + 1; j++)
             {
-                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
+                float cost = GetSubstitutionCost(s[i - 1], t[j - 1]);
                 d[i, j] = Math.Min(
-                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    Math.Min(d[i - 1, j] + 0.8f, d[i, j - 1] + 0.8f), // Lower penalty for deletions/insertions
                     d[i - 1, j - 1] + cost
                 );
             }
