@@ -7,12 +7,13 @@ using System.Linq;
 
 public class Wav2VecONNX : IDisposable
 {
+    private const string LogSource = "Wav2VecONNX.cs";
     [Header("Model Settings")]
     public ModelAsset wav2vec2ModelAsset;
 
     [Header("Model Configuration")]
-    public int expectedSampleRate = 16000;
-    public bool normalizeAudio = true;
+    public int expectedSampleRate = BackendConfig.Ml.DefaultExpectedSampleRate;
+    public bool normalizeAudio = BackendConfig.Ml.DefaultNormalizeAudio;
 
     private Model model;
     private Worker worker;
@@ -32,7 +33,7 @@ public class Wav2VecONNX : IDisposable
         {10, "y"}, {23, "z"}, {0, "|"}
     };
 
-    private const int BLANK_TOKEN_ID = 42; // [PAD] is blank token for CTC
+    private const int BLANK_TOKEN_ID = BackendConfig.Ml.BlankTokenId; // [PAD] is blank token for CTC
 
     public Wav2VecONNX(ModelAsset modelAsset, bool enableDetailedLogs = false)
     {
@@ -43,7 +44,7 @@ public class Wav2VecONNX : IDisposable
         model = ModelLoader.Load(wav2vec2ModelAsset);
         LogDebug("Creating GPU worker...");
         worker = new Worker(model, BackendType.GPUCompute);
-        Debug.Log("[Wav2VecONNX] Model loaded and GPU worker initialized.");
+        BackendLogger.Info(LogSource, "ModelLoaded", "backend=GPUCompute");
     }
 
     /// <summary>
@@ -110,13 +111,13 @@ public class Wav2VecONNX : IDisposable
         }
     }
 
-    public void WarmUp(int sampleCount = 16000)
+    public void WarmUp(int sampleCount = BackendConfig.Ml.DefaultWarmUpSampleCount)
     {
         if (isDisposed)
             throw new ObjectDisposedException(nameof(Wav2VecONNX));
 
         if (sampleCount < 1)
-            sampleCount = 16000;
+            sampleCount = BackendConfig.Ml.DefaultWarmUpSampleCount;
 
         LogDebug($"Warm-up start. sampleCount={sampleCount}");
         var silent = new float[sampleCount];
@@ -129,6 +130,8 @@ public class Wav2VecONNX : IDisposable
         int batchSize = logits.shape[0];
         int timeSteps = logits.shape[1];
         int vocabSize = logits.shape[2];
+
+        LogDebug($"DecodeCTC shape batch={batchSize}, timeSteps={timeSteps}, vocabSize={vocabSize}");
 
         float[] logitsData = logits.DownloadToArray();
         List<int> tokenIndices = new List<int>();
@@ -254,12 +257,11 @@ public class Wav2VecONNX : IDisposable
         worker = null;
         model = null;
         isDisposed = true;
-        Debug.Log("[Wav2VecONNX] Worker disposed. GPU resources released.");
+        BackendLogger.Info(LogSource, "WorkerDisposed", "gpuResourcesReleased=true");
     }
 
     private void LogDebug(string message)
     {
-        if (enableDebugLogs)
-            Debug.Log($"[Wav2VecONNX][DEBUG] {message}");
+        BackendLogger.Verbose(enableDebugLogs, LogSource, "Diagnostic", message);
     }
 }

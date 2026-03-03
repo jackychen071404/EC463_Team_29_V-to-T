@@ -4,15 +4,16 @@ using System.IO;
 
 public class VoiceRecorder : MonoBehaviour
 {
+    private const string LogSource = "VoiceRecorder.cs";
     public static VoiceRecorder Instance;
 
     [Header("Recording Settings")]
-    public float recordingDuration = 2f;  // Recording time in seconds
+    public float recordingDuration = BackendConfig.Voice.DefaultRecordingDurationSeconds;  // Recording time in seconds
 
     [Header("Microphone Stability")]
-    [SerializeField] private float androidSettleDelaySeconds = 0.2f;
-    [SerializeField] private float nonAndroidSettleDelaySeconds = 0.05f;
-    [SerializeField] private float micStartTimeoutSeconds = 1.5f;
+    [SerializeField] private float androidSettleDelaySeconds = BackendConfig.Voice.AndroidSettleDelaySeconds;
+    [SerializeField] private float nonAndroidSettleDelaySeconds = BackendConfig.Voice.NonAndroidSettleDelaySeconds;
+    [SerializeField] private float micStartTimeoutSeconds = BackendConfig.Voice.MicStartTimeoutSeconds;
 
     private AudioClip recording;
     private string micName;
@@ -20,7 +21,6 @@ public class VoiceRecorder : MonoBehaviour
     private bool isPreparingMic = false;
     private float nextStartAllowedAt = 0f;
     private int recordingCount = 0;
-    private const int MAX_RECORDINGS = 5;
 
     void Awake()
     {
@@ -44,12 +44,12 @@ public class VoiceRecorder : MonoBehaviour
         if (Microphone.devices.Length > 0)
         {
             micName = Microphone.devices[0];
-            Debug.Log("Using microphone: " + micName);
+            BackendLogger.Info(LogSource, "MicrophoneInitialized", $"selectedDevice={micName}, deviceCount={Microphone.devices.Length}");
             LoadRecordingCount();
         }
         else
         {
-            Debug.LogError("No microphone detected!");
+            BackendLogger.Error(LogSource, "MicrophoneMissing", "No microphone devices detected by Unity");
         }
     }
 
@@ -57,13 +57,13 @@ public class VoiceRecorder : MonoBehaviour
     {
         if (micName == null)
         {
-            Debug.LogWarning("Cannot start recording - no microphone detected");
+            BackendLogger.Warn(LogSource, "StartRecordingRejected", "reason=no_mic_device");
             return false;
         }
 
         if (isRecording || isPreparingMic)
         {
-            Debug.LogWarning("Cannot start recording - microphone is already active or preparing");
+            BackendLogger.Warn(LogSource, "StartRecordingRejected", $"reason=mic_busy, isRecording={isRecording}, isPreparingMic={isPreparingMic}");
             return false;
         }
 
@@ -75,7 +75,7 @@ public class VoiceRecorder : MonoBehaviour
     {
         if (!isRecording)
         {
-            Debug.LogWarning("No recording in progress");
+            BackendLogger.Warn(LogSource, "StopRecordingRejected", "reason=no_active_recording");
             return false;
         }
 
@@ -88,13 +88,13 @@ public class VoiceRecorder : MonoBehaviour
 
         if (recording == null)
         {
-            Debug.LogError("Recording clip is null after stopping microphone.");
+            BackendLogger.Error(LogSource, "RecordingClipMissing", "recording clip became null after microphone stop");
             return false;
         }
 
         if (position <= 0)
         {
-            Debug.LogWarning("Recording contained no samples. Skipping WAV save.");
+            BackendLogger.Warn(LogSource, "RecordingEmpty", $"micPosition={position}, action=skip_save");
             recording = null;
             return false;
         }
@@ -103,20 +103,20 @@ public class VoiceRecorder : MonoBehaviour
         float[] samples = new float[position * recording.channels];
         recording.GetData(samples, 0);
         
-        AudioClip trimmedClip = AudioClip.Create("TrimmedRecording", position, recording.channels, recording.frequency, false);
+        AudioClip trimmedClip = AudioClip.Create(BackendConfig.Voice.TrimmedClipName, position, recording.channels, recording.frequency, false);
         trimmedClip.SetData(samples, 0);
 
-        Debug.Log("Recording stopped and saved.");
+        BackendLogger.Info(LogSource, "RecordingStopped", $"capturedSamples={position}, channels={recording.channels}, frequency={recording.frequency}");
 
         // Increment count and create unique filename
         recordingCount++;
-        string filename = $"VoiceRecording_{recordingCount:D2}.wav";
+        string filename = BackendConfig.Voice.FormatRecordingFileName(recordingCount);
         
         SaveWav(filename, trimmedClip);
         recording = null;
         
         // Delete oldest file if we exceed the limit
-        if (recordingCount > MAX_RECORDINGS)
+        if (recordingCount > BackendConfig.Voice.MaxRecordings)
         {
             DeleteOldestRecording();
         }
@@ -134,15 +134,16 @@ public class VoiceRecorder : MonoBehaviour
         while (Time.unscaledTime < nextStartAllowedAt)
             yield return null;
 
-        int targetFrequency = 44100;
+        int targetFrequency = BackendConfig.Voice.SampleRateHz;
         recording = Microphone.Start(micName, false, Mathf.CeilToInt(recordingDuration), targetFrequency);
+        BackendLogger.Verbose(true, LogSource, "RecordingStartRequested", $"device={micName}, durationSec={recordingDuration:F2}, sampleRateHz={targetFrequency}");
 
-        float timeoutAt = Time.unscaledTime + Mathf.Max(0.1f, micStartTimeoutSeconds);
+        float timeoutAt = Time.unscaledTime + Mathf.Max(BackendConfig.Voice.MinMicStartTimeoutSeconds, micStartTimeoutSeconds);
         while (Microphone.GetPosition(micName) <= 0)
         {
             if (Time.unscaledTime >= timeoutAt)
             {
-                Debug.LogError("Microphone failed to initialize in time. Releasing session.");
+                BackendLogger.Error(LogSource, "MicrophoneStartTimeout", $"timeoutSec={micStartTimeoutSeconds:F2}, settleDelaySec={GetSettleDelay():F2}");
                 if (Microphone.IsRecording(micName))
                     Microphone.End(micName);
 
@@ -158,7 +159,7 @@ public class VoiceRecorder : MonoBehaviour
 
         isRecording = true;
         isPreparingMic = false;
-        Debug.Log("Recording started...");
+        BackendLogger.Info(LogSource, "RecordingStarted", $"device={micName}, settleDelaySec={GetSettleDelay():F2}");
     }
 
     private float GetSettleDelay()
@@ -176,7 +177,7 @@ public class VoiceRecorder : MonoBehaviour
             return;
             
         // Find all existing voice recordings
-        string[] existingFiles = Directory.GetFiles(directory, "VoiceRecording_*.wav");
+        string[] existingFiles = Directory.GetFiles(directory, BackendConfig.Voice.RecordingSearchPattern);
         
         if (existingFiles.Length > 0)
         {
@@ -185,7 +186,7 @@ public class VoiceRecorder : MonoBehaviour
             foreach (string file in existingFiles)
             {
                 string filename = Path.GetFileNameWithoutExtension(file);
-                string numberPart = filename.Replace("VoiceRecording_", "");
+                string numberPart = filename.Replace(BackendConfig.Voice.RecordingPrefix, "");
                 
                 if (int.TryParse(numberPart, out int number))
                 {
@@ -194,20 +195,20 @@ public class VoiceRecorder : MonoBehaviour
                 }
             }
             recordingCount = maxNumber;
-            Debug.Log($"Found {existingFiles.Length} existing recordings. Starting from #{recordingCount + 1}");
+            BackendLogger.Info(LogSource, "RecordingIndexLoaded", $"existingFiles={existingFiles.Length}, nextRecordingIndex={recordingCount + 1}");
         }
     }
 
     private void DeleteOldestRecording()
     {
-        int oldestNumber = recordingCount - MAX_RECORDINGS;
-        string oldestFile = $"VoiceRecording_{oldestNumber:D2}.wav";
+        int oldestNumber = recordingCount - BackendConfig.Voice.MaxRecordings;
+        string oldestFile = BackendConfig.Voice.FormatRecordingFileName(oldestNumber);
         string oldestPath = Path.Combine(Application.persistentDataPath, oldestFile);
         
         if (File.Exists(oldestPath))
         {
             File.Delete(oldestPath);
-            Debug.Log($"Deleted oldest recording: {oldestFile}");
+            BackendLogger.Info(LogSource, "RecordingDeleted", $"fileName={oldestFile}, fullPath={oldestPath}");
         }
     }
 
@@ -220,8 +221,8 @@ public class VoiceRecorder : MonoBehaviour
         string filePath = Path.Combine(Application.persistentDataPath, filename);
         File.WriteAllBytes(filePath, wavData);
 
-        Debug.Log($"Saved recording to: {filePath}");
-        Debug.Log($"Total recordings: {Mathf.Min(recordingCount, MAX_RECORDINGS)} of {MAX_RECORDINGS}");
+        BackendLogger.Info(LogSource, "RecordingSaved", $"fileName={filename}, fullPath={filePath}, bytes={wavData.Length}, channels={clip.channels}, sampleRateHz={clip.frequency}");
+        BackendLogger.Verbose(true, LogSource, "RecordingRetentionStatus", $"retained={Mathf.Min(recordingCount, BackendConfig.Voice.MaxRecordings)}, max={BackendConfig.Voice.MaxRecordings}");
     }
 
     private byte[] ConvertToWav(float[] samples, int channels, int sampleRate)
@@ -256,7 +257,7 @@ public class VoiceRecorder : MonoBehaviour
     // Public method to get the path of the latest recording
     public string GetLatestRecordingPath()
     {
-        string filename = $"VoiceRecording_{recordingCount:D2}.wav";
+        string filename = BackendConfig.Voice.FormatRecordingFileName(recordingCount);
         return Path.Combine(Application.persistentDataPath, filename);
     }
 

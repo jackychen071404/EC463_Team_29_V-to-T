@@ -5,6 +5,7 @@ using UnityEngine;
 
 public static class PhonemeConverter
 {
+    private const string LogSource = "PhonemeConverter.cs";
     private static Dictionary<string, List<string>> cmuDict;
 
     private static readonly Dictionary<string, string> ArpaToVocab = new()
@@ -21,14 +22,21 @@ public static class PhonemeConverter
 
     public static void LoadCMUDict(TextAsset cmuFile)
     {
+        if (cmuFile == null)
+        {
+            cmuDict = new Dictionary<string, List<string>>();
+            BackendLogger.Error(LogSource, "CMUDictLoadFailed", "reason=null_text_asset");
+            return;
+        }
+
         cmuDict = new Dictionary<string, List<string>>();
 
-        foreach (string line in cmuFile.text.Split('\n'))
+        foreach (string line in cmuFile.text.Split(BackendConfig.Cmu.LineSeparator))
         {
-            if (line.StartsWith(";;;") || string.IsNullOrWhiteSpace(line))
+            if (line.StartsWith(BackendConfig.Cmu.CommentPrefix) || string.IsNullOrWhiteSpace(line))
                 continue;
 
-            string[] parts = line.Split("  ");
+            string[] parts = line.Split(BackendConfig.Cmu.WordPhonemeSeparator);
             if (parts.Length < 2)
                 continue;
 
@@ -36,16 +44,24 @@ public static class PhonemeConverter
             string phonemes = parts[1].Trim();
 
             var clean = phonemes
-                .Split(' ')
+                .Split(BackendConfig.Cmu.PhonemeSeparator)
                 .Select(p => new string(p.Where(char.IsLetter).ToArray()))
                 .ToList();
 
             cmuDict[word] = clean;
         }
+
+        BackendLogger.Info(LogSource, "CMUDictLoaded", $"entries={cmuDict.Count}, source={cmuFile.name}");
     }
 
     public static List<string> ConvertWord(string word)
     {
+        if (cmuDict == null)
+        {
+            BackendLogger.Warn(LogSource, "ConvertWordBeforeLoad", $"inputWord={word}");
+            return new List<string>();
+        }
+
         word = word.ToLower().Trim();
         if (!cmuDict.TryGetValue(word, out var arpaList))
             return new List<string>();

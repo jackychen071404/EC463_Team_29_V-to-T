@@ -149,6 +149,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoiceRecorder
   recordingDuration: 2
+  androidSettleDelaySeconds: 0.2
+  nonAndroidSettleDelaySeconds: 0.05
+  micStartTimeoutSeconds: 1.5
 --- !u!4 &29916767
 Transform:
   m_ObjectHideFlags: 0
@@ -976,7 +979,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73254fece2122b642bb680afe1ed626c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Wav2VecManager
-  wav2vecModel: {fileID: 5022602860645237092, guid: 188d7cf9f3d92224dafa00f6553948f0, type: 3}
+  wav2vecModel: {fileID: 5022602860645237092, guid: 912f74bfc99f68e439008b88801dcfc6, type: 3}
+  enableDetailedLogs: 1
+  warmUpOnStart: 1
+  warmUpSampleCount: 16000
 --- !u!4 &674367166
 Transform:
   m_ObjectHideFlags: 0

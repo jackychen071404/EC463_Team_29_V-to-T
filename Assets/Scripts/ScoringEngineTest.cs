@@ -5,17 +5,10 @@ using UnityEngine;
 
 public static class PhonemeScoringEngine
 {
-    // Weight configuration (0–1, sum does NOT need to equal 1)
-    private const float MAIN_WEIGHT       = 0.70f;  // phoneme Levenshtein
-    private const float VOWEL_WEIGHT      = 0.15f;  // vowel similarity
-    private const float LENGTH_WEIGHT     = 0.15f;  // phoneme length penalty
-
+    private const string LogSource = "ScoringEngineTest.cs";
     // For vowel detection ("ah", "eh", "ee", "ay", etc.)
     // Must match your vocab mapping.
-    private static readonly HashSet<string> Vowels = new()
-    {
-        "a","aw","ay","e","ee","i","o","oau","oh","oi","oo","or","u","uoh"
-    };
+    private static readonly HashSet<string> Vowels = new(BackendConfig.Scoring.Vowels);
 
     // MAIN ENTRY FUNCTION
     public static float CalculateSimilarity(string spokenPhonemes, string targetPhonemes)
@@ -24,23 +17,27 @@ public static class PhonemeScoringEngine
         var targetTokens = Tokenize(targetPhonemes);
 
         if (spokenTokens.Length == 0 || targetTokens.Length == 0)
+        {
+            BackendLogger.Warn(LogSource, "SimilaritySkipped", $"reason=empty_tokens, spokenTokenCount={spokenTokens.Length}, targetTokenCount={targetTokens.Length}");
             return 0f;
+        }
 
         float editSim  = PhonemeEditSimilarity(spokenTokens, targetTokens);     // 0–1
         float vowelSim = VowelSimilarity(spokenTokens, targetTokens);           // 0–1
         float lenPen   = LengthPenalty(spokenTokens, targetTokens);             // 0–1
 
         float score =
-            editSim  * MAIN_WEIGHT +
-            vowelSim * VOWEL_WEIGHT +
-            lenPen   * LENGTH_WEIGHT;
+            editSim  * BackendConfig.Scoring.MainWeight +
+            vowelSim * BackendConfig.Scoring.VowelWeight +
+            lenPen   * BackendConfig.Scoring.LengthWeight;
 
-        Debug.Log($"Phoneme Edit Similarity: {editSim:F3}");
-        Debug.Log($"Vowel Similarity: {vowelSim:F3}");
-        Debug.Log($"Length Penalty: {lenPen:F3}");
-        Debug.Log($"Final Score (0–100): {score * 100f:F3}");
+        BackendLogger.Info(
+            LogSource,
+            "SimilarityComputed",
+            $"spokenTokens={spokenTokens.Length}, targetTokens={targetTokens.Length}, editSim={editSim:F3}, vowelSim={vowelSim:F3}, lengthPenalty={lenPen:F3}, finalScore={score * BackendConfig.Scoring.ScoreScale:F3}, scoreScale={BackendConfig.Scoring.ScoreScale:F1}"
+        );
 
-        return score * 100f; // Already in range 0–100
+        return score * BackendConfig.Scoring.ScoreScale; // Already in range 0–100
     }
 
     // ---------------------------------------------------------
@@ -127,11 +124,11 @@ public static class PhonemeScoringEngine
     {
         float ratio = (float)s.Length / t.Length;
 
-        if (ratio < 0.5f)
-            return 0.4f;
-        if (ratio > 1.8f)
-            return 0.4f;
+        if (ratio < BackendConfig.Scoring.MinLengthRatio)
+            return BackendConfig.Scoring.OutOfRangeLengthPenalty;
+        if (ratio > BackendConfig.Scoring.MaxLengthRatio)
+            return BackendConfig.Scoring.OutOfRangeLengthPenalty;
 
-        return 1f - Math.Abs(1f - ratio) * 0.5f;
+        return 1f - Math.Abs(1f - ratio) * BackendConfig.Scoring.RatioPenaltyFactor;
     }
 }

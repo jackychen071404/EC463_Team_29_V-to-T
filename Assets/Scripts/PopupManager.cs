@@ -6,6 +6,7 @@ using Unity.InferenceEngine;
 
 public class PopupManager : MonoBehaviour
 {
+    private const string LogSource = "PopupManager.cs";
     public static PopupManager Instance;
 
     [Header("Popup Elements")]
@@ -68,7 +69,7 @@ public class PopupManager : MonoBehaviour
         // Safety check
         if (VoiceRecorder.Instance == null)
         {
-            Debug.LogError("VoiceRecorder instance not found!");
+            BackendLogger.Error(LogSource, "ProcessSpeechFailed", "reason=voice_recorder_missing");
             feedback.text = "Error: Microphone not ready";
             yield break;
         }
@@ -103,21 +104,23 @@ public class PopupManager : MonoBehaviour
 
         // Get the recording path
         string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
-        Debug.Log($"Processing recording: {recordingPath}");
+        BackendLogger.Info(LogSource, "SpeechProcessingStarted", $"recordingPath={recordingPath}, bubbleNumber={bubbleNumber}");
         
         string numberToString = changeNumberToString(bubbleNumber);
 
         Wav2VecManager.Instance.GetScoreFromFile(recordingPath, numberToString, async (score) =>
         {
-            if (score < 0f)
+            if (score < BackendConfig.Ml.ScoreErrorValue)
             {
+                BackendLogger.Warn(LogSource, "SpeechProcessingFailed", $"bubbleNumber={bubbleNumber}, score={score:F3}");
                 feedback.text = "Error processing audio. Please try again.";
                 speak.interactable = true;
                 return;
             }
 
-            if (score > 70f)
+            if (score > BackendConfig.Processing.CorrectScoreThreshold)
             {
+                BackendLogger.Info(LogSource, "SpeechScoreAccepted", $"bubbleNumber={bubbleNumber}, threshold={BackendConfig.Processing.CorrectScoreThreshold:F1}, score={score:F1}");
                 feedback.text = "Correct! \n" + $" (Score: {score:F1})";
 
                 // Pop the bubble and close popup
@@ -128,6 +131,7 @@ public class PopupManager : MonoBehaviour
             }
             else
             {
+                BackendLogger.Info(LogSource, "SpeechScoreRejected", $"bubbleNumber={bubbleNumber}, threshold={BackendConfig.Processing.CorrectScoreThreshold:F1}, score={score:F1}");
                 feedback.text = "Try again! \n" + $" (Score: {score:F1})";
 
                 // // Reset UI to let them try again

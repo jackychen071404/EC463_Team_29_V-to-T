@@ -6,6 +6,7 @@ using Unity.InferenceEngine;
 
 public class Wav2VecManager : MonoBehaviour
 {
+    private const string LogSource = "Wav2VecManager.cs";
     public static Wav2VecManager Instance;
     public ModelAsset wav2vecModel;
     [Header("Debug")]
@@ -13,7 +14,7 @@ public class Wav2VecManager : MonoBehaviour
 
     [Header("Warm-up")]
     public bool warmUpOnStart = true;
-    public int warmUpSampleCount = 16000;
+    public int warmUpSampleCount = BackendConfig.Ml.DefaultWarmUpSampleCount;
 
     private Wav2VecONNX wav2vec;
 
@@ -34,7 +35,15 @@ public class Wav2VecManager : MonoBehaviour
 
     void Start()
     {
-        var cmuFile = Resources.Load<TextAsset>("cmudict");
+        var cmuFile = Resources.Load<TextAsset>(BackendConfig.Ml.CmuDictResourceName);
+        if (cmuFile == null)
+        {
+            BackendLogger.Error(LogSource, "CMUDictLoadFailed", $"resourceName={BackendConfig.Ml.CmuDictResourceName}");
+        }
+        else
+        {
+            BackendLogger.Info(LogSource, "CMUDictLoaded", $"resourceName={BackendConfig.Ml.CmuDictResourceName}, charLength={cmuFile.text?.Length ?? 0}");
+        }
         PhonemeConverter.LoadCMUDict(cmuFile);
 
         InitializeModel();
@@ -50,31 +59,31 @@ public class Wav2VecManager : MonoBehaviour
 
         if (wav2vecModel == null)
         {
-            Debug.LogError("[Wav2VecManager] wav2vecModel is not assigned.");
+            BackendLogger.Error(LogSource, "ModelMissing", "wav2vecModel is not assigned in inspector");
             return;
         }
 
         wav2vec = new Wav2VecONNX(wav2vecModel, enableDetailedLogs);
-        Debug.Log("[Wav2VecManager] Wav2VecONNX instance initialized.");
+        BackendLogger.Info(LogSource, "ModelInitialized", $"detailedLogs={enableDetailedLogs}");
     }
 
     private void WarmUpModel()
     {
         if (wav2vec == null)
         {
-            Debug.LogWarning("[Wav2VecManager] Warm-up skipped because model is not initialized.");
+            BackendLogger.Warn(LogSource, "WarmUpSkipped", "reason=model_not_initialized");
             return;
         }
 
         try
         {
-            Debug.Log($"[Wav2VecManager] Warm-up started. Samples={warmUpSampleCount}");
+            BackendLogger.Info(LogSource, "WarmUpStarted", $"sampleCount={warmUpSampleCount}");
             wav2vec.WarmUp(warmUpSampleCount);
-            Debug.Log("[Wav2VecManager] Warm-up completed.");
+            BackendLogger.Info(LogSource, "WarmUpCompleted", $"sampleCount={warmUpSampleCount}");
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[Wav2VecManager] Warm-up failed: {ex.Message}");
+            BackendLogger.Error(LogSource, "WarmUpFailed", ex, $"sampleCount={warmUpSampleCount}");
         }
     }
 
@@ -88,13 +97,12 @@ public class Wav2VecManager : MonoBehaviour
     {
         if (wav2vec == null)
         {
-            Debug.LogError("[Wav2VecManager] Model is not initialized.");
-            onScoreReady?.Invoke(-1f);
+            BackendLogger.Error(LogSource, "ScoreRequestFailed", "reason=model_not_initialized");
+            onScoreReady?.Invoke(BackendConfig.Ml.ScoreErrorValue);
             yield break;
         }
 
-        if (enableDetailedLogs)
-            Debug.Log($"[Wav2VecManager][DEBUG] Loading WAV from path: {path}");
+        BackendLogger.Verbose(enableDetailedLogs, LogSource, "ScoreRequestStarted", $"audioPath={path}, targetWord={targetWord}");
 
         using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file:///" + path, AudioType.WAV))
         {
@@ -102,25 +110,22 @@ public class Wav2VecManager : MonoBehaviour
 
             if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("Failed to load audio: " + www.error);
-                onScoreReady?.Invoke(-1f); // return -1 on failure
+                BackendLogger.Error(LogSource, "AudioLoadFailed", $"audioPath={path}, webRequestError={www.error}, result={www.result}");
+                onScoreReady?.Invoke(BackendConfig.Ml.ScoreErrorValue); // return -1 on failure
                 yield break;
             }
 
             AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-            if (enableDetailedLogs)
-                Debug.Log($"[Wav2VecManager][DEBUG] Audio clip loaded. Samples={clip.samples}, Channels={clip.channels}, Frequency={clip.frequency}");
+            BackendLogger.Verbose(enableDetailedLogs, LogSource, "AudioLoaded", $"samples={clip.samples}, channels={clip.channels}, frequencyHz={clip.frequency}");
 
             string predictedPhonemes = wav2vec.GetPhonemesFromClip(clip);
             string targetPhonemes = PhonemeConverter.ConvertWordAsString(targetWord);
 
-            Debug.Log($"Target Word: {targetWord}");
-            Debug.Log($"Predicted Phonemes: {predictedPhonemes}");
-            Debug.Log($"Target Phonemes: {targetPhonemes}");
+            BackendLogger.Info(LogSource, "PhonemeExtractionCompleted", $"targetWord={targetWord}, predicted='{predictedPhonemes}', target='{targetPhonemes}'");
 
             float score = PhonemeScoringEngine.CalculateSimilarity(predictedPhonemes, targetPhonemes);
 
-            Debug.Log($"Similarity Score: {score}");
+            BackendLogger.Info(LogSource, "ScoreComputed", $"targetWord={targetWord}, score={score:F3}");
 
             // Return the score via callback
             onScoreReady?.Invoke(score);
@@ -147,8 +152,9 @@ public class Wav2VecManager : MonoBehaviour
         if (wav2vec == null)
             return;
 
-        Debug.Log("[Wav2VecManager] Disposing Wav2VecONNX...");
+        BackendLogger.Info(LogSource, "ModelDisposeStarted", null);
         wav2vec.Dispose();
         wav2vec = null;
+        BackendLogger.Info(LogSource, "ModelDisposeCompleted", null);
     }
 }
