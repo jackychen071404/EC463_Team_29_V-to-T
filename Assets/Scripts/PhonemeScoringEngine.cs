@@ -5,9 +5,8 @@ using UnityEngine;
 
 public static class PhonemeScoringEngine
 {
-    private const string LogSource = "ScoringEngineTest.cs";
-    // For vowel detection ("ah", "eh", "ee", "ay", etc.)
-    // Must match your vocab mapping.
+    private const string LogSource = "PhonemeScoringEngine.cs";
+
     private static readonly HashSet<string> Vowels = new(BackendConfig.Scoring.Vowels);
 
     // MAIN ENTRY FUNCTION
@@ -22,22 +21,26 @@ public static class PhonemeScoringEngine
             return 0f;
         }
 
-        float editSim  = PhonemeEditSimilarity(spokenTokens, targetTokens);     // 0–1
-        float vowelSim = VowelSimilarity(spokenTokens, targetTokens);           // 0–1
-        float lenPen   = LengthPenalty(spokenTokens, targetTokens);             // 0–1
+        float editSim  = PhonemeEditSimilarity(spokenTokens, targetTokens);
+        float vowelSim = VowelSimilarity(spokenTokens, targetTokens);
+        float lenPen   = LengthPenalty(spokenTokens, targetTokens);
 
         float score =
             editSim  * BackendConfig.Scoring.MainWeight +
             vowelSim * BackendConfig.Scoring.VowelWeight +
             lenPen   * BackendConfig.Scoring.LengthWeight;
 
+
+        float finalScore = score * BackendConfig.Scoring.ScoreScale;
+        finalScore = Mathf.Clamp(finalScore, 0f,100f);
+
         BackendLogger.Info(
             LogSource,
             "SimilarityComputed",
-            $"spokenTokens={spokenTokens.Length}, targetTokens={targetTokens.Length}, editSim={editSim:F3}, vowelSim={vowelSim:F3}, lengthPenalty={lenPen:F3}, finalScore={score * BackendConfig.Scoring.ScoreScale:F3}, scoreScale={BackendConfig.Scoring.ScoreScale:F1}"
+            $"spokenTokens={spokenTokens.Length}, targetTokens={targetTokens.Length}, editSim={editSim:F3}, vowelSim={vowelSim:F3}, lengthPenalty={lenPen:F3}, score={score:F3}, finalScore={finalScore:F3}, scoreScale={BackendConfig.Scoring.ScoreScale:F1}"
         );
 
-        return score * BackendConfig.Scoring.ScoreScale; // Already in range 0–100
+        return finalScore;
     }
 
     // ---------------------------------------------------------
@@ -61,38 +64,33 @@ public static class PhonemeScoringEngine
     // ---------------------------------------------------------
     private static float PhonemeEditSimilarity(string[] s, string[] t)
     {
-        int dist = TokenLevenshtein(s, t);
+        float dist = TokenLevenshtein(s, t);
         int maxLen = Math.Max(s.Length, t.Length);
 
         if (maxLen == 0)
             return 1f;
 
-        return 1f - (float)dist / maxLen;
+        return 1f - dist / maxLen;
     }
 
-    private static int TokenLevenshtein(string[] s, string[] t)
+    private static float TokenLevenshtein(string[] s, string[] t)
     {
         int n = s.Length;
         int m = t.Length;
-        int[,] d = new int[n + 1, m + 1];
+        float[,] d = new float[n + 1, m + 1];
 
         for (int i = 0; i <= n; i++)
             d[i, 0] = i;
         for (int j = 0; j <= m; j++)
             d[0, j] = j;
 
-        for (int i = 1; i < n + 1; i++)
+        for (int i = 1; i <= n; i++)
         {
-            for (int j = 1; j < m + 1; j++)
+            for (int j = 1; j <= m; j++)
             {
-                //int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
-                //d[i, j] = Math.Min(
-                //    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                //    d[i - 1, j - 1] + cost
-                //);
                 float cost = GetSubstitutionCost(s[i - 1], t[j - 1]);
                 d[i, j] = Math.Min(
-                    Math.Min(d[i - 1, j] + 0.8f, d[i, j - 1] + 0.8f), // Lower penalty for deletions/insertions
+                    Math.Min(d[i - 1, j] + 0.8f, d[i, j - 1] + 0.8f),
                     d[i - 1, j - 1] + cost
                 );
             }
@@ -102,12 +100,73 @@ public static class PhonemeScoringEngine
     }
 
     // ---------------------------------------------------------
-    // VOWEL SIMILARITY (OPTIONAL BUT VERY USEFUL)
+    // SUBSTITUTION COST
+    // ---------------------------------------------------------
+    private static float GetSubstitutionCost(string a, string b)
+    {
+        if (a == b) return 0f;
+
+        bool aIsVowel = Vowels.Contains(a);
+        bool bIsVowel = Vowels.Contains(b);
+
+        // Cross vowel/consonant: max penalty
+        if (aIsVowel != bIsVowel) return 1f;
+
+        if (aIsVowel)
+            return AreSimilarVowels(a, b) ? 0.3f : 0.7f;
+
+        return AreSimilarConsonants(a, b) ? 0.3f : 0.6f;
+    }
+
+    private static bool AreSimilarVowels(string a, string b)
+    {
+        string[][] groups = {
+            new[] { "ay", "ee", "i" },
+            new[] { "oh", "oo", "aw" },
+            new[] { "a", "e", "u" },
+            new[] { "or", "oau", "oi" },
+            new[] { "uoh", "u" },
+        };
+
+        foreach (var group in groups)
+            if (group.Contains(a) && group.Contains(b)) return true;
+
+        return false;
+    }
+
+    private static bool AreSimilarConsonants(string a, string b)
+    {
+        string[][] groups = {
+            new[] { "b", "p" },
+            new[] { "d", "t" },
+            new[] { "g", "k" },
+            new[] { "v", "f" },
+            new[] { "z", "s" },
+            new[] { "th", "s", "z" },
+            new[] { "sh", "ch" },
+            new[] { "j", "ch" },
+            new[] { "m", "n", "ng" },
+            new[] { "w", "v" },
+            new[] { "r", "l" },
+            new[] { "h", "f" },
+        };
+
+        foreach (var group in groups)
+            if (group.Contains(a) && group.Contains(b)) return true;
+
+        return false;
+    }
+
+    // ---------------------------------------------------------
+    // VOWEL SIMILARITY
     // ---------------------------------------------------------
     private static float VowelSimilarity(string[] s, string[] t)
     {
         var sVowels = s.Where(p => Vowels.Contains(p)).ToList();
         var tVowels = t.Where(p => Vowels.Contains(p)).ToList();
+
+        if (sVowels.Count == 0 && tVowels.Count == 0)
+            return 1f;
 
         if (sVowels.Count == 0 || tVowels.Count == 0)
             return 0f;
@@ -119,11 +178,13 @@ public static class PhonemeScoringEngine
             if (sVowels[i] == tVowels[i])
                 matchCount++;
 
-        return (float)matchCount / min;
+        // Penalize length mismatch in vowel sequences too
+        int max = Math.Max(sVowels.Count, tVowels.Count);
+        return (float)matchCount / max;
     }
 
     // ---------------------------------------------------------
-    // LENGTH PENALTY BASED ON PHONEME COUNT
+    // LENGTH PENALTY
     // ---------------------------------------------------------
     private static float LengthPenalty(string[] s, string[] t)
     {

@@ -15,7 +15,7 @@ public static class PhonemeConverter
         {"R","r"},{"S","s"},{"SH","sh"},{"T","t"},{"TH","th"},{"V","v"},{"W","w"},
         {"Y","y"},{"Z","z"},
 
-        {"AA","a"},{"AE","e"},{"AH","u"},{"AO","aw"},{"AW","oau"},{"AY","ay"},
+        {"AA","a"},{"AE","a"},{"AH","u"},{"AO","aw"},{"AW","oau"},{"AY","ay"},
         {"EH","e"},{"ER","or"},{"EY","ay"},{"IH","i"},{"IY","ee"},{"OW","oh"},
         {"OY","oi"},{"UH","uoh"},{"UW","oo"}
     };

@@ -37,7 +37,9 @@ public static class BackendLogger
 
     private static string Format(string level, string sourceFile, string eventName, string details)
     {
-        string baseMessage = $"{Prefix}[{level}][{sourceFile}] {eventName}";
+        string timestamp = DateTime.UtcNow.ToString("HH:mm:ss.fff");
+        string runtime = Time.realtimeSinceStartup.ToString("F3");
+        string baseMessage = $"{Prefix}[{timestamp}][t+{runtime}s][{level}][{sourceFile}] {eventName}";
         return string.IsNullOrWhiteSpace(details) ? baseMessage : $"{baseMessage} | {details}";
     }
 

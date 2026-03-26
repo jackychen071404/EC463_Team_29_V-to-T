@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 
 public class FoodSceneController : MonoBehaviour
 {
+    private const string LogSource = "FoodSceneController.cs";
+
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI wordText;
     [SerializeField] private TextMeshProUGUI feedbackText;
@@ -87,7 +89,9 @@ public class FoodSceneController : MonoBehaviour
         PrepareParticles(confettiParticles);
 
         if (penguinRectTransform == null && penguinTransform == null)
-            Debug.LogWarning("[FoodSceneController] No bounce target assigned. Cookie bounce will do nothing.");
+            BackendLogger.Warn(LogSource, "CookieBounceTargetMissing", "No bounce target assigned; cookie bounce animation will be skipped");
+
+        BackendLogger.Info(LogSource, "SceneInitialized", $"words={words.Length}, passThreshold={passThreshold:F1}, feedbackSeconds={feedbackSeconds:F2}");
 
         StartRound(0);
     }
@@ -96,9 +100,11 @@ public class FoodSceneController : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(nextSceneName))
         {
-            Debug.LogError("[FoodSceneController] nextSceneName is empty.");
+            BackendLogger.Error(LogSource, "NextSceneNavigationFailed", "reason=empty_next_scene_name");
             return;
         }
+
+        BackendLogger.Info(LogSource, "NextSceneNavigation", $"nextScene={nextSceneName}");
 
         SceneManager.LoadScene(nextSceneName);
     }
@@ -106,6 +112,8 @@ public class FoodSceneController : MonoBehaviour
     private void StartRound(int i)
     {
         index = Mathf.Clamp(i, 0, words.Length - 1);
+
+        BackendLogger.Info(LogSource, "RoundStarted", $"index={index}, targetWord={CurrentWord()}");
 
         StopAllPrompts();
         StopAllFailFeedback();
@@ -137,12 +145,18 @@ public class FoodSceneController : MonoBehaviour
         busy = false;
         SetMicUI(enabled: true, label: "Tap to Speak");
 
+        BackendLogger.Verbose(true, LogSource, "MicEnabledAfterPrompt", $"targetWord={CurrentWord()}, promptWaitSec={wait:F2}, postPromptDelaySec={postPromptDelay:F2}");
+
         if (wordText) wordText.text = $"Say:\n{CurrentWord().ToUpper()}";
     }
     // ADD MIC USAGE AND SCORE HERE
     private void OnMicPressed()
     {
-        if (busy) return;
+        if (busy)
+        {
+            BackendLogger.Verbose(true, LogSource, "MicPressIgnored", "reason=controller_busy");
+            return;
+        }
 
         // Tap 1: start listening
         if (!isListening)
@@ -157,11 +171,11 @@ public class FoodSceneController : MonoBehaviour
             if (VoiceRecorder.Instance != null)
             {
                 VoiceRecorder.Instance.StartRecording();
-                Debug.Log("[FoodSceneController] Started recording.");
+                BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={CurrentWord()}");
             }
             else
             {
-                Debug.LogError("[FoodSceneController] VoiceRecorder.Instance is null!");
+                BackendLogger.Error(LogSource, "ListeningStartFailed", "reason=voice_recorder_missing");
             }
 
             SetMicUI(enabled: true, label: "Tap to Stop");
@@ -177,6 +191,7 @@ public class FoodSceneController : MonoBehaviour
         float listenedFor = Time.time - listenStartTime;
         if (listenedFor < minListenSeconds)
         {
+            BackendLogger.Warn(LogSource, "ListeningTooShort", $"listenedForSec={listenedFor:F3}, minListenSec={minListenSeconds:F3}");
             // Stop recording but don't score
             if (VoiceRecorder.Instance != null && VoiceRecorder.Instance.IsCurrentlyRecording())
             {
@@ -192,36 +207,38 @@ public class FoodSceneController : MonoBehaviour
         {
             VoiceRecorder.Instance.StopAndSaveRecording();
             string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
-            Debug.Log($"[FoodSceneController] Recording saved to: {recordingPath}");
+            BackendLogger.Info(LogSource, "RecordingSaved", $"recordingPath={recordingPath}");
 
             // Get score from Wav2VecManager
             if (Wav2VecManager.Instance != null)
             {
                 string targetWord = CurrentWord();
-                Debug.Log($"[FoodSceneController] Requesting score for word: {targetWord}");
+                BackendLogger.Info(LogSource, "ScoreRequested", $"targetWord={targetWord}, recordingPath={recordingPath}");
                 
                 Wav2VecManager.Instance.GetScoreFromFile(recordingPath, targetWord, OnScoreReceived);
             }
             else
             {
-                Debug.LogError("[FoodSceneController] Wav2VecManager.Instance is null!");
+                BackendLogger.Error(LogSource, "ScoreRequestFallback", "reason=wav2vec_manager_missing");
                 // Fallback to random score
                 float score = Random.Range(randomMinScore, randomMaxScore + 1);
+                BackendLogger.Warn(LogSource, "FallbackScoreGenerated", $"score={score:F1}, min={randomMinScore}, max={randomMaxScore}");
                 OnScoreReceived(score);
             }
         }
         else
         {
-            Debug.LogError("[FoodSceneController] VoiceRecorder.Instance is null!");
+            BackendLogger.Error(LogSource, "ScoreRequestFallback", "reason=voice_recorder_missing");
             // Fallback to random score
             float score = Random.Range(randomMinScore, randomMaxScore + 1);
+            BackendLogger.Warn(LogSource, "FallbackScoreGenerated", $"score={score:F1}, min={randomMinScore}, max={randomMaxScore}");
             OnScoreReceived(score);
         }
     }
 
     private void OnScoreReceived(float score)
     {
-        Debug.Log($"[FoodSceneController] Received score: {score}");
+        BackendLogger.Info(LogSource, "ScoreReceived", $"score={score:F3}, threshold={passThreshold:F1}, pass={score >= passThreshold}");
         
         bool pass = score >= passThreshold;
 
@@ -235,6 +252,8 @@ public class FoodSceneController : MonoBehaviour
         StopAllFailFeedback();
 
         string w = CurrentWord();
+
+        BackendLogger.Info(LogSource, "RoundPassed", $"targetWord={w}, score={score:F1}");
 
         if (feedbackText) feedbackText.text = $"Nice job! Score: {Mathf.RoundToInt(score)}% ";
         ShowFoodPenguin();
@@ -268,6 +287,8 @@ public class FoodSceneController : MonoBehaviour
         StopAllFailFeedback();
         PlayFailFeedback();
 
+        BackendLogger.Info(LogSource, "RoundFailed", $"targetWord={CurrentWord()}, score={score:F1}");
+
         busy = false;
         SetMicUI(enabled: true, label: "Tap to Speak");
 
@@ -289,6 +310,8 @@ public class FoodSceneController : MonoBehaviour
 
     private IEnumerator QuickRetry(string msg)
     {
+        BackendLogger.Verbose(true, LogSource, "QuickRetry", $"message={msg}");
+
         if (feedbackText) feedbackText.text = msg;
         yield return new WaitForSeconds(0.9f);
 
@@ -406,7 +429,7 @@ public class FoodSceneController : MonoBehaviour
 
         if (source == null || source.clip == null)
         {
-            Debug.LogWarning("[FoodSceneController] Fail feedback missing on this word.");
+            BackendLogger.Warn(LogSource, "FailFeedbackMissing", $"targetWord={CurrentWord()}, index={index}");
             return;
         }
 

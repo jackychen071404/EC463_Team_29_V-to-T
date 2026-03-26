@@ -2,9 +2,9 @@ public static class BackendConfig
 {
     public static class Voice
     {
-        public const float DefaultRecordingDurationSeconds = 2f;
+        public const float DefaultRecordingDurationSeconds = 3f;
         public const float AndroidSettleDelaySeconds = 0.2f;
-        public const float NonAndroidSettleDelaySeconds = 0.05f;
+        public const float NonAndroidSettleDelaySeconds = AndroidSettleDelaySeconds;
         public const float MicStartTimeoutSeconds = 1.5f;
         public const float MinMicStartTimeoutSeconds = 0.1f;
         public const int SampleRateHz = 44100;
@@ -51,7 +51,7 @@ public static class BackendConfig
         public const float LengthWeight = 0.15f;
 
         // TODO: Change these afterwards based on testing and tuning
-        public const float ScoreScale = 150f;
+        public const float ScoreScale = 100f;
         public const float MinLengthRatio = 0.5f;
         public const float MaxLengthRatio = 1.8f;
         public const float OutOfRangeLengthPenalty = 0.4f;
@@ -59,7 +59,7 @@ public static class BackendConfig
 
         public static readonly string[] Vowels =
         {
-            "a","aw","ay","e","ee","i","o","oau","oh","oi","oo","or","u","uoh"
+            "a","aw","ay","e","ee","i", "I", "o","oau","oh","oi","oo","or","u","uoh"
         };
     }
 }

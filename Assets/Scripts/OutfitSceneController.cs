@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class OutfitSceneController : MonoBehaviour
 {
+    private const string LogSource = "OutfitSceneController.cs";
+
     [Header("UI")]
     [SerializeField] private TMP_Text promptText;
     [SerializeField] private GameObject feedbackPanel;
@@ -43,6 +45,8 @@ public class OutfitSceneController : MonoBehaviour
     private void Start()
     {
         device = (Microphone.devices.Length > 0) ? Microphone.devices[0] : null;
+
+        BackendLogger.Info(LogSource, "SceneInitialized", $"hasMicDevice={!string.IsNullOrWhiteSpace(device)}, passThreshold={passThreshold:F1}, maxRecordSeconds={maxRecordSeconds:F2}");
 
         RefreshUnlockedVisibility();
         HideFeedbackNow();
@@ -90,7 +94,11 @@ public class OutfitSceneController : MonoBehaviour
 
     public void OnRecordPressed()
     {
-        if (busy) return;
+        if (busy)
+        {
+            BackendLogger.Verbose(true, LogSource, "RecordPressIgnored", "reason=controller_busy");
+            return;
+        }
 
         if (!isListening)
             StartListening();
@@ -105,7 +113,7 @@ public class OutfitSceneController : MonoBehaviour
         if (VoiceRecorder.Instance == null)
         {
             if (promptText) promptText.text = "VoiceRecorder not initialized.";
-            Debug.LogError("[OutfitSceneController] VoiceRecorder.Instance is null!");
+            BackendLogger.Error(LogSource, "ListeningStartFailed", "reason=voice_recorder_missing");
             return;
         }
 
@@ -116,7 +124,7 @@ public class OutfitSceneController : MonoBehaviour
 
         // Start recording using VoiceRecorder
         VoiceRecorder.Instance.StartRecording();
-        Debug.Log("[OutfitSceneController] Started recording.");
+        BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={GameManager.I.CurrentWord}");
 
         if (autoStopCoroutine != null) StopCoroutine(autoStopCoroutine);
         autoStopCoroutine = StartCoroutine(AutoStopAfter(maxRecordSeconds));
@@ -146,6 +154,7 @@ public class OutfitSceneController : MonoBehaviour
 
         if (listenedFor < minListenSeconds)
         {
+            BackendLogger.Warn(LogSource, "ListeningTooShort", $"listenedForSec={listenedFor:F3}, minListenSec={minListenSeconds:F3}");
             StartCoroutine(QuickRetry("Hold it for a sec"));
             return;
         }
@@ -161,36 +170,38 @@ public class OutfitSceneController : MonoBehaviour
             }
 
             string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
-            Debug.Log($"[OutfitSceneController] Recording saved to: {recordingPath}");
+            BackendLogger.Info(LogSource, "RecordingSaved", $"recordingPath={recordingPath}");
 
             // Get score from Wav2VecManager
             if (Wav2VecManager.Instance != null)
             {
                 string targetWord = GameManager.I.CurrentWord;
-                Debug.Log($"[OutfitSceneController] Requesting score for word: {targetWord}");
+                BackendLogger.Info(LogSource, "ScoreRequested", $"targetWord={targetWord}, recordingPath={recordingPath}");
                 
                 Wav2VecManager.Instance.GetScoreFromFile(recordingPath, targetWord, OnScoreReceived);
             }
             else
             {
-                Debug.LogError("[OutfitSceneController] Wav2VecManager.Instance is null!");
+                BackendLogger.Error(LogSource, "ScoreRequestFallback", "reason=wav2vec_manager_missing");
                 // Fallback to random score
                 float score = Random.Range(randomMinScore, randomMaxScore + 1);
+                BackendLogger.Warn(LogSource, "FallbackScoreGenerated", $"score={score:F1}, min={randomMinScore}, max={randomMaxScore}");
                 OnScoreReceived(score);
             }
         }
         else
         {
-            Debug.LogError("[OutfitSceneController] VoiceRecorder.Instance is null!");
+            BackendLogger.Error(LogSource, "ScoreRequestFallback", "reason=voice_recorder_missing");
             // Fallback to random score
             float score = Random.Range(randomMinScore, randomMaxScore + 1);
+            BackendLogger.Warn(LogSource, "FallbackScoreGenerated", $"score={score:F1}, min={randomMinScore}, max={randomMaxScore}");
             OnScoreReceived(score);
         }
     }
 
     private void OnScoreReceived(float score)
     {
-        Debug.Log($"[OutfitSceneController] Received score: {score}");
+        BackendLogger.Info(LogSource, "ScoreReceived", $"score={score:F3}, threshold={passThreshold:F1}, pass={score >= passThreshold}");
         
         bool pass = score >= passThreshold;
 
@@ -204,6 +215,7 @@ public class OutfitSceneController : MonoBehaviour
 
     private void HandlePass(float score)
     {
+        BackendLogger.Info(LogSource, "RoundPassed", $"targetWord={GameManager.I.CurrentWord}, score={score:F1}");
         ShowFeedback(score, true, "Awesome! Penguin is so happy!");
 
         string word = GameManager.I.CurrentWord;
@@ -215,6 +227,7 @@ public class OutfitSceneController : MonoBehaviour
 
     private void HandleFail(float score)
     {
+        BackendLogger.Info(LogSource, "RoundFailed", $"targetWord={GameManager.I.CurrentWord}, score={score:F1}");
         ShowFeedback(score, false, "Almost! Let’s try it one more time.");
     }
 
@@ -225,6 +238,8 @@ public class OutfitSceneController : MonoBehaviour
 
     private IEnumerator QuickRetry(string msg)
     {
+        BackendLogger.Verbose(true, LogSource, "QuickRetry", $"message={msg}");
+
         if (feedbackText && feedbackPanel)
         {
             feedbackPanel.SetActive(true);
@@ -306,6 +321,8 @@ public class OutfitSceneController : MonoBehaviour
 
     public void OnResetPressed()
     {
+        BackendLogger.Info(LogSource, "ResetPressed", null);
+
         GameManager.I.ResetProgress();
         RefreshUnlockedVisibility();
         HideFeedbackNow();
