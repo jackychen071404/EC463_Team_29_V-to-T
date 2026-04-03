@@ -27,6 +27,7 @@ public static class BackendConfig
         public const int DefaultWarmUpSampleCount = 16000;
         public const int DefaultExpectedSampleRate = 16000;
         public const bool DefaultNormalizeAudio = true;
+        public const float LeadingSilencePaddingSeconds = 0.10f;
         public const int BlankTokenId = 42;
         public const float ScoreErrorValue = -1f;
     }
@@ -59,7 +60,7 @@ public static class BackendConfig
 
         public static readonly string[] Vowels =
         {
-            "a","aw","ay","e","ee","i", "I", "o","oau","oh","oi","oo","or","u","uoh"
+            "a","aw","ay","e","ee","i", "I", "o","oau","oh","oi","oo","or","u","uoh","E"
         };
     }
 }

@@ -14,6 +14,7 @@ public class Wav2VecONNX : IDisposable
     [Header("Model Configuration")]
     public int expectedSampleRate = BackendConfig.Ml.DefaultExpectedSampleRate;
     public bool normalizeAudio = BackendConfig.Ml.DefaultNormalizeAudio;
+    public float leadingSilencePaddingSeconds = BackendConfig.Ml.LeadingSilencePaddingSeconds;
 
     private Model model;
     private Worker worker;
@@ -34,6 +35,8 @@ public class Wav2VecONNX : IDisposable
     };
 
     private const int BLANK_TOKEN_ID = BackendConfig.Ml.BlankTokenId; // [PAD] is blank token for CTC
+    private const int P_TOKEN_ID = 16;
+    private const int InitialFrameDiagnosticCount = 12;
 
     public Wav2VecONNX(ModelAsset modelAsset, bool enableDetailedLogs = false)
     {
@@ -63,6 +66,8 @@ public class Wav2VecONNX : IDisposable
         if (normalizeAudio)
             monoData = NormalizeAudio(monoData);
 
+        monoData = PrependSilence(monoData, expectedSampleRate, leadingSilencePaddingSeconds);
+
         return RunInference(monoData);
     }
 
@@ -82,6 +87,8 @@ public class Wav2VecONNX : IDisposable
 
         if (normalizeAudio)
             monoData = NormalizeAudio(monoData);
+
+        monoData = PrependSilence(monoData, expectedSampleRate, leadingSilencePaddingSeconds);
 
         return RunInference(monoData);
     }
@@ -135,6 +142,7 @@ public class Wav2VecONNX : IDisposable
 
         float[] logitsData = logits.DownloadToArray();
         List<int> tokenIndices = new List<int>();
+        List<float> topLogits = new List<float>(timeSteps);
 
         for (int t = 0; t < timeSteps; t++)
         {
@@ -152,26 +160,73 @@ public class Wav2VecONNX : IDisposable
             }
 
             tokenIndices.Add(maxIndex);
+            topLogits.Add(maxValue);
         }
+
+        LogInitialFrameDiagnostics(logitsData, vocabSize, tokenIndices, topLogits);
 
         // Remove consecutive duplicates and blanks
         List<string> phonemes = new List<string>();
         int prevToken = -1;
         foreach (int token in tokenIndices)
         {
-            if (token != prevToken && token != BLANK_TOKEN_ID)
+            if (token == BLANK_TOKEN_ID)
             {
-                prevToken = token;
-                if (vocab.ContainsKey(token))
-                {
-                    string ph = vocab[token];
-                    if (ph != "[UNK]" && ph != "[PAD]" && ph != "|")
-                        phonemes.Add(ph);
-                }
+                // CTC blank resets duplicate suppression.
+                prevToken = -1;
+                continue;
             }
+
+            if (!vocab.TryGetValue(token, out string ph))
+                continue;
+
+            if (ph == "[UNK]" || ph == "[PAD]" || ph == "|")
+                continue;
+
+            if (token == prevToken)
+                continue;
+
+            phonemes.Add(ph);
+            prevToken = token;
         }
 
         return string.Join(" ", phonemes).Trim();
+    }
+
+    private void LogInitialFrameDiagnostics(float[] logitsData, int vocabSize, List<int> tokenIndices, List<float> topLogits)
+    {
+        if (!enableDebugLogs || tokenIndices == null || tokenIndices.Count == 0)
+            return;
+
+        int framesToInspect = Mathf.Min(InitialFrameDiagnosticCount, tokenIndices.Count);
+        List<string> frameSummaries = new List<string>(framesToInspect);
+        int pTop1Count = 0;
+
+        for (int t = 0; t < framesToInspect; t++)
+        {
+            int bestToken = tokenIndices[t];
+            float bestLogit = topLogits[t];
+            float pLogit = logitsData[t * vocabSize + P_TOKEN_ID];
+            int pRank = 1;
+
+            for (int v = 0; v < vocabSize; v++)
+            {
+                if (logitsData[t * vocabSize + v] > pLogit)
+                    pRank++;
+            }
+
+            if (bestToken == P_TOKEN_ID)
+                pTop1Count++;
+
+            frameSummaries.Add($"t{t}:best={TokenLabel(bestToken)}({bestLogit:F3}),pRank={pRank},pLogit={pLogit:F3}");
+        }
+
+        LogDebug($"InitialFrameTokenRanks frames={framesToInspect}, pTop1Frames={pTop1Count}, {string.Join(" | ", frameSummaries)}");
+    }
+
+    private string TokenLabel(int token)
+    {
+        return vocab.TryGetValue(token, out var label) ? label : $"id{token}";
     }
 
     private (float[] data, int sampleRate, int channels) LoadWavFile(string path)
@@ -245,6 +300,23 @@ public class Wav2VecONNX : IDisposable
         if (maxAbs > 0)
             return audioData.Select(s => s / maxAbs).ToArray();
         return audioData;
+    }
+
+    private float[] PrependSilence(float[] audioData, int sampleRate, float seconds)
+    {
+        if (audioData == null || audioData.Length == 0)
+            return audioData;
+
+        if (seconds <= 0f || sampleRate <= 0)
+            return audioData;
+
+        int silenceSamples = Mathf.RoundToInt(sampleRate * seconds);
+        if (silenceSamples <= 0)
+            return audioData;
+
+        float[] padded = new float[audioData.Length + silenceSamples];
+        Array.Copy(audioData, 0, padded, silenceSamples, audioData.Length);
+        return padded;
     }
 
     public void Dispose()

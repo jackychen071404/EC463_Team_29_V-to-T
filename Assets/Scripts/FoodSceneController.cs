@@ -56,6 +56,8 @@ public class FoodSceneController : MonoBehaviour
     [SerializeField] private float feedbackSeconds = 3.5f;
     [SerializeField] private float postPromptDelay = 0.15f;
     [SerializeField] private float minListenSeconds = 0.25f;
+    [SerializeField] private float micReadyTimeoutSeconds = 1.8f;
+    [SerializeField] private float speakReadyDelaySeconds = 0.12f;
 
     [Header("Bounce Settings")]
     [SerializeField] private float bounceAmount = 25f;
@@ -161,24 +163,10 @@ public class FoodSceneController : MonoBehaviour
         // Tap 1: start listening
         if (!isListening)
         {
-            isListening = true;
-            listenStartTime = Time.time;
-
             StopAllFailFeedback();
             if (feedbackText) feedbackText.text = "";
 
-            // Start recording
-            if (VoiceRecorder.Instance != null)
-            {
-                VoiceRecorder.Instance.StartRecording();
-                BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={CurrentWord()}");
-            }
-            else
-            {
-                BackendLogger.Error(LogSource, "ListeningStartFailed", "reason=voice_recorder_missing");
-            }
-
-            SetMicUI(enabled: true, label: "Tap to Stop");
+            StartCoroutine(BeginListeningWhenReady());
             return;
         }
 
@@ -205,7 +193,14 @@ public class FoodSceneController : MonoBehaviour
         // Stop recording and save
         if (VoiceRecorder.Instance != null)
         {
-            VoiceRecorder.Instance.StopAndSaveRecording();
+            bool saved = VoiceRecorder.Instance.StopAndSaveRecording();
+            if (!saved)
+            {
+                BackendLogger.Warn(LogSource, "RecordingSaveFailed", "reason=empty_or_unavailable_audio");
+                StartCoroutine(QuickRetry("Mic not ready. Try again."));
+                return;
+            }
+
             string recordingPath = VoiceRecorder.Instance.GetLatestRecordingPath();
             BackendLogger.Info(LogSource, "RecordingSaved", $"recordingPath={recordingPath}");
 
@@ -234,6 +229,52 @@ public class FoodSceneController : MonoBehaviour
             BackendLogger.Warn(LogSource, "FallbackScoreGenerated", $"score={score:F1}, min={randomMinScore}, max={randomMaxScore}");
             OnScoreReceived(score);
         }
+    }
+
+    private IEnumerator BeginListeningWhenReady()
+    {
+        busy = true;
+        SetMicUI(enabled: false, label: "Starting Mic...");
+
+        if (feedbackText) feedbackText.text = "Get ready...";
+
+        if (VoiceRecorder.Instance == null)
+        {
+            BackendLogger.Error(LogSource, "ListeningStartFailed", "reason=voice_recorder_missing");
+            StartCoroutine(QuickRetry("Mic unavailable. Try again."));
+            yield break;
+        }
+
+        bool startAccepted = VoiceRecorder.Instance.StartRecording();
+        if (!startAccepted)
+        {
+            BackendLogger.Warn(LogSource, "ListeningStartRejected", "reason=recorder_busy_or_missing");
+            StartCoroutine(QuickRetry("Mic is busy. Try again."));
+            yield break;
+        }
+
+        float timeoutAt = Time.time + Mathf.Max(BackendConfig.Voice.MinMicStartTimeoutSeconds, micReadyTimeoutSeconds);
+        while (!VoiceRecorder.Instance.IsCurrentlyRecording() && Time.time < timeoutAt)
+            yield return null;
+
+        if (!VoiceRecorder.Instance.IsCurrentlyRecording())
+        {
+            BackendLogger.Warn(LogSource, "ListeningStartTimeout", $"timeoutSec={micReadyTimeoutSeconds:F2}");
+            StartCoroutine(QuickRetry("Mic not ready. Try again."));
+            yield break;
+        }
+
+        if (speakReadyDelaySeconds > 0f)
+            yield return new WaitForSeconds(speakReadyDelaySeconds);
+
+        isListening = true;
+        listenStartTime = Time.time;
+        busy = false;
+
+        SetMicUI(enabled: true, label: "Tap to Stop");
+        if (feedbackText) feedbackText.text = "Speak now!";
+
+        BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={CurrentWord()}, micReadyDelaySec={speakReadyDelaySeconds:F2}");
     }
 
     private void OnScoreReceived(float score)

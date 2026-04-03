@@ -148,9 +148,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdde67bc4f5a12245a239e1c0877469f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoiceRecorder
-  recordingDuration: 2
+  recordingDuration: 3
   androidSettleDelaySeconds: 0.2
-  nonAndroidSettleDelaySeconds: 0.05
+  nonAndroidSettleDelaySeconds: 0.2
   micStartTimeoutSeconds: 1.5
 --- !u!4 &29916767
 Transform:
