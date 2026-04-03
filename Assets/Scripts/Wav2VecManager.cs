@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System;
 using System.Collections;
+using System.Text.RegularExpressions;
 using Unity.InferenceEngine;
 
 public class Wav2VecManager : MonoBehaviour
@@ -123,7 +124,9 @@ public class Wav2VecManager : MonoBehaviour
 
             BackendLogger.Info(LogSource, "PhonemeExtractionCompleted", $"targetWord={targetWord}, predicted='{predictedPhonemes}', target='{targetPhonemes}'");
 
-            float score = PhonemeScoringEngine.CalculateSimilarity(predictedPhonemes, targetPhonemes);
+            bool startsWithConsonant = Regex.IsMatch(targetWord, @"^[^aeiouAEIOU]");
+            BackendLogger.Verbose(enableDetailedLogs, LogSource, "InitialConsonantCheck", $"targetWord={targetWord}, startsWithConsonant={startsWithConsonant}");
+            float score = PhonemeScoringEngine.CalculateSimilarity(predictedPhonemes, targetPhonemes, startsWithConsonant);
 
             BackendLogger.Info(LogSource, "ScoreComputed", $"targetWord={targetWord}, score={score:F3}");
 

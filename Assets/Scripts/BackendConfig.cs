@@ -52,7 +52,7 @@ public static class BackendConfig
         public const float LengthWeight = 0.15f;
 
         // TODO: Change these afterwards based on testing and tuning
-        public const float ScoreScale = 100f;
+        public const float ScoreScale = 120f;
         public const float MinLengthRatio = 0.5f;
         public const float MaxLengthRatio = 1.8f;
         public const float OutOfRangeLengthPenalty = 0.4f;
@@ -62,5 +62,7 @@ public static class BackendConfig
         {
             "a","aw","ay","e","ee","i", "I", "o","oau","oh","oi","oo","or","u","uoh","E"
         };
+
+        public const float InitialConsonantBonus = 15f;
     }
 }

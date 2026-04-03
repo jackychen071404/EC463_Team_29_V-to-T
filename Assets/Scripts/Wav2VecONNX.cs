@@ -23,15 +23,49 @@ public class Wav2VecONNX : IDisposable
 
     private readonly Dictionary<int, string> vocab = new Dictionary<int, string>
     {
-        {39, "E"}, {1, "I"}, {42, "[PAD]"}, {41, "[UNK]"}, {24, "a"},
-        {30, "aw"}, {6, "ay"}, {3, "b"}, {25, "bth"}, {19, "ch"},
-        {4, "d"}, {32, "e"}, {9, "ee"}, {7, "f"}, {33, "g"},
-        {8, "h"}, {34, "i"}, {5, "j"}, {11, "k"}, {12, "l"},
-        {13, "m"}, {14, "n"}, {26, "ng"}, {27, "o"}, {28, "oau"},
-        {15, "oh"}, {29, "oi"}, {20, "oo"}, {31, "or"}, {2, "ow"},
-        {16, "p"}, {35, "r"}, {17, "s"}, {36, "sh"}, {18, "t"},
-        {40, "th"}, {38, "u"}, {37, "uoh"}, {21, "v"}, {22, "w"},
-        {10, "y"}, {23, "z"}, {0, "|"}
+        {1,  "ay"},    // aɪ  → AY
+        {2,  "oau"},   // aʊ  → AW
+        {3,  "b"},     // b
+        {4,  "d"},     // d
+        {5,  "j"},     // d͡ʒ → JH
+        {6,  "ay"},    // eɪ  → EY (same surface form as AY)
+        {7,  "f"},     // f
+        {8,  "h"},     // h   → HH
+        {9,  "ee"},    // i   → IY
+        {10, "y"},     // j   → Y
+        {11, "k"},     // k
+        {12, "l"},     // l
+        {13, "m"},     // m
+        {14, "n"},     // n
+        {15, "oh"},    // oʊ  → OW
+        {16, "p"},     // p
+        {17, "s"},     // s
+        {18, "t"},     // t
+        {19, "ch"},    // t͡ʃ → CH
+        {20, "oo"},    // u   → UW
+        {21, "v"},     // v
+        {22, "w"},     // w
+        {23, "z"},     // z
+        {24, "a"},     // æ   → AE
+        {25, "th"},    // ð   → DH
+        {26, "ng"},    // ŋ   → NG
+        {27, "a"},     // ɑ   → AA
+        {28, "aw"},    // ɔ   → AO
+        {29, "oi"},    // ɔɪ  → OY
+        {30, "u"},     // ə   → AH (schwa) — was "aw", caused apple/similar mismatches
+        {31, "or"},    // ɚ   → ER
+        {32, "e"},     // ɛ   → EH
+        {33, "g"},     // ɡ   → G
+        {34, "i"},     // ɪ   → IH
+        {35, "r"},     // ɹ   → R
+        {36, "sh"},    // ʃ   → SH
+        {37, "uoh"},   // ʊ   → UH
+        {38, "u"},     // ʌ   → AH (stressed)
+        {39, "sh"},    // ʒ   → ZH (no ZH in scorer vocab; nearest is sh)
+        {40, "th"},    // θ   → TH
+        {41, "[UNK]"},
+        {42, "[PAD]"},
+        {0,  "|"}
     };
 
     private const int BLANK_TOKEN_ID = BackendConfig.Ml.BlankTokenId; // [PAD] is blank token for CTC

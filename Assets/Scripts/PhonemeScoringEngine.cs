@@ -10,7 +10,7 @@ public static class PhonemeScoringEngine
     private static readonly HashSet<string> Vowels = new(BackendConfig.Scoring.Vowels);
 
     // MAIN ENTRY FUNCTION
-    public static float CalculateSimilarity(string spokenPhonemes, string targetPhonemes)
+    public static float CalculateSimilarity(string spokenPhonemes, string targetPhonemes, bool initialConsonantLeniency = false)
     {
         var spokenTokens = Tokenize(spokenPhonemes);
         var targetTokens = Tokenize(targetPhonemes);
@@ -30,14 +30,17 @@ public static class PhonemeScoringEngine
             vowelSim * BackendConfig.Scoring.VowelWeight +
             lenPen   * BackendConfig.Scoring.LengthWeight;
 
-
         float finalScore = score * BackendConfig.Scoring.ScoreScale;
-        finalScore = Mathf.Clamp(finalScore, 0f,100f);
+
+        if (initialConsonantLeniency)
+            finalScore += BackendConfig.Scoring.InitialConsonantBonus;
+
+        finalScore = Mathf.Clamp(finalScore, 0f, 100f);
 
         BackendLogger.Info(
             LogSource,
             "SimilarityComputed",
-            $"spokenTokens={spokenTokens.Length}, targetTokens={targetTokens.Length}, editSim={editSim:F3}, vowelSim={vowelSim:F3}, lengthPenalty={lenPen:F3}, score={score:F3}, finalScore={finalScore:F3}, scoreScale={BackendConfig.Scoring.ScoreScale:F1}"
+            $"spokenTokens={spokenTokens.Length}, targetTokens={targetTokens.Length}, editSim={editSim:F3}, vowelSim={vowelSim:F3}, lengthPenalty={lenPen:F3}, score={score:F3}, finalScore={finalScore:F3}, scoreScale={BackendConfig.Scoring.ScoreScale:F1}, initialConsonantLeniency={initialConsonantLeniency}"
         );
 
         return finalScore;
