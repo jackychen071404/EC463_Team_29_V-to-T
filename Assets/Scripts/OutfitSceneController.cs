@@ -101,12 +101,12 @@ public class OutfitSceneController : MonoBehaviour
         }
 
         if (!isListening)
-            StartListening();
+            StartCoroutine(StartListening());
         else
             StopListeningAndScore();
     }
 
-    private void StartListening()
+    private IEnumerator StartListening()
     {
         HideFeedbackNow();
 
@@ -114,17 +114,30 @@ public class OutfitSceneController : MonoBehaviour
         {
             if (promptText) promptText.text = "VoiceRecorder not initialized.";
             BackendLogger.Error(LogSource, "ListeningStartFailed", "reason=voice_recorder_missing");
-            return;
+            yield break;
         }
+
+        VoiceRecorder.Instance.StartRecording();
+
+        float timeoutAt = Time.unscaledTime + BackendConfig.Voice.MicStartTimeoutSeconds;
+        while (!VoiceRecorder.Instance.IsCurrentlyRecording() && Time.unscaledTime < timeoutAt)
+            yield return null;
+
+        if (!VoiceRecorder.Instance.IsCurrentlyRecording())
+        {
+            if (promptText) promptText.text = "Mic not ready. Try again.";
+            BackendLogger.Warn(LogSource, "ListeningStartTimeout", $"timeoutSec={BackendConfig.Voice.MicStartTimeoutSeconds:F2}");
+            yield break;
+        }
+
+        yield return new WaitForSeconds(BackendConfig.Voice.MicAgcWarmupSeconds);
 
         isListening = true;
         listenStartTime = Time.time;
 
         SetMicUI(enabled: true, label: "Tap to Stop");
 
-        // Start recording using VoiceRecorder
-        VoiceRecorder.Instance.StartRecording();
-        BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={GameManager.I.CurrentWord}");
+        BackendLogger.Info(LogSource, "ListeningStarted", $"targetWord={GameManager.I.CurrentWord}, micAgcWarmupSec={BackendConfig.Voice.MicAgcWarmupSeconds:F2}");
 
         if (autoStopCoroutine != null) StopCoroutine(autoStopCoroutine);
         autoStopCoroutine = StartCoroutine(AutoStopAfter(maxRecordSeconds));

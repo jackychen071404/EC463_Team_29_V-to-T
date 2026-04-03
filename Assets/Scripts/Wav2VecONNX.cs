@@ -15,6 +15,7 @@ public class Wav2VecONNX : IDisposable
     public int expectedSampleRate = BackendConfig.Ml.DefaultExpectedSampleRate;
     public bool normalizeAudio = BackendConfig.Ml.DefaultNormalizeAudio;
     public float leadingSilencePaddingSeconds = BackendConfig.Ml.LeadingSilencePaddingSeconds;
+    public float trailingSilencePaddingSeconds = BackendConfig.Ml.TrailingSilencePaddingSeconds;
 
     private Model model;
     private Worker worker;
@@ -101,6 +102,7 @@ public class Wav2VecONNX : IDisposable
             monoData = NormalizeAudio(monoData);
 
         monoData = PrependSilence(monoData, expectedSampleRate, leadingSilencePaddingSeconds);
+        monoData = AppendSilence(monoData, expectedSampleRate, trailingSilencePaddingSeconds);
 
         return RunInference(monoData);
     }
@@ -123,6 +125,7 @@ public class Wav2VecONNX : IDisposable
             monoData = NormalizeAudio(monoData);
 
         monoData = PrependSilence(monoData, expectedSampleRate, leadingSilencePaddingSeconds);
+        monoData = AppendSilence(monoData, expectedSampleRate, trailingSilencePaddingSeconds);
 
         return RunInference(monoData);
     }
@@ -350,6 +353,23 @@ public class Wav2VecONNX : IDisposable
 
         float[] padded = new float[audioData.Length + silenceSamples];
         Array.Copy(audioData, 0, padded, silenceSamples, audioData.Length);
+        return padded;
+    }
+
+    private float[] AppendSilence(float[] audioData, int sampleRate, float seconds)
+    {
+        if (audioData == null || audioData.Length == 0)
+            return audioData;
+
+        if (seconds <= 0f || sampleRate <= 0)
+            return audioData;
+
+        int silenceSamples = Mathf.RoundToInt(sampleRate * seconds);
+        if (silenceSamples <= 0)
+            return audioData;
+
+        float[] padded = new float[audioData.Length + silenceSamples];
+        Array.Copy(audioData, 0, padded, 0, audioData.Length);
         return padded;
     }
 

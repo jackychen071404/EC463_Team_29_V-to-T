@@ -49,7 +49,7 @@ public class FoodSceneController : MonoBehaviour
     [SerializeField] private Transform penguinTransform;
 
     [Header("Scoring / Flow")]
-    [Range(0, 100)] [SerializeField] private float passThreshold = 80f;
+    [Range(0, 100)] [SerializeField] private float passThreshold = 75f;
     [SerializeField] private int randomMinScore = 50;
     [SerializeField] private int randomMaxScore = 100;
 

@@ -6,6 +6,7 @@ public static class BackendConfig
         public const float AndroidSettleDelaySeconds = 0.2f;
         public const float NonAndroidSettleDelaySeconds = AndroidSettleDelaySeconds;
         public const float MicStartTimeoutSeconds = 1.5f;
+        public const float MicAgcWarmupSeconds = 0.3f;
         public const float MinMicStartTimeoutSeconds = 0.1f;
         public const int SampleRateHz = 44100;
         public const int MaxRecordings = 5;
@@ -27,7 +28,8 @@ public static class BackendConfig
         public const int DefaultWarmUpSampleCount = 16000;
         public const int DefaultExpectedSampleRate = 16000;
         public const bool DefaultNormalizeAudio = true;
-        public const float LeadingSilencePaddingSeconds = 0.10f;
+        public const float LeadingSilencePaddingSeconds = 0.5f;
+        public const float TrailingSilencePaddingSeconds = 0.2f;
         public const int BlankTokenId = 42;
         public const float ScoreErrorValue = -1f;
     }
@@ -51,8 +53,7 @@ public static class BackendConfig
         public const float VowelWeight = 0.15f;
         public const float LengthWeight = 0.15f;
 
-        // TODO: Change these afterwards based on testing and tuning
-        public const float ScoreScale = 120f;
+        public const float ScoreScale = 108f;
         public const float MinLengthRatio = 0.5f;
         public const float MaxLengthRatio = 1.8f;
         public const float OutOfRangeLengthPenalty = 0.4f;
@@ -63,6 +64,6 @@ public static class BackendConfig
             "a","aw","ay","e","ee","i", "I", "o","oau","oh","oi","oo","or","u","uoh","E"
         };
 
-        public const float InitialConsonantBonus = 15f;
+        public const float InitialConsonantBonus = 20f;
     }
 }
