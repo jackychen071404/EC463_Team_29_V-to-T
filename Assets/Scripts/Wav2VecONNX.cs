@@ -98,6 +98,9 @@ public class Wav2VecONNX : IDisposable
         if (clip.frequency != expectedSampleRate)
             monoData = Resample(monoData, clip.frequency, expectedSampleRate);
 
+        monoData = ApplyDynamicRangeCompression(monoData);
+        monoData = ApplyPreEmphasis(monoData);
+
         if (normalizeAudio)
             monoData = NormalizeAudio(monoData);
 
@@ -371,6 +374,36 @@ public class Wav2VecONNX : IDisposable
         float[] padded = new float[audioData.Length + silenceSamples];
         Array.Copy(audioData, 0, padded, 0, audioData.Length);
         return padded;
+    }
+
+    private float[] ApplyDynamicRangeCompression(float[] audioData)
+    {
+        float factor = BackendConfig.Ml.DynamicCompressionFactor;
+        float logDenom = Mathf.Log(1f + factor);
+        float[] output = new float[audioData.Length];
+
+        for (int i = 0; i < audioData.Length; i++)
+        {
+            float s = audioData[i];
+            output[i] = Mathf.Sign(s) * Mathf.Log(1f + factor * Mathf.Abs(s)) / logDenom;
+        }
+
+        return output;
+    }
+
+    private float[] ApplyPreEmphasis(float[] audioData)
+    {
+        if (audioData == null || audioData.Length < 2)
+            return audioData;
+
+        float coef = BackendConfig.Ml.PreEmphasisCoefficient;
+        float[] output = new float[audioData.Length];
+        output[0] = audioData[0];
+
+        for (int i = 1; i < audioData.Length; i++)
+            output[i] = audioData[i] - coef * audioData[i - 1];
+
+        return output;
     }
 
     public void Dispose()

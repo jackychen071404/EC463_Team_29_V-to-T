@@ -30,6 +30,8 @@ public static class BackendConfig
         public const bool DefaultNormalizeAudio = true;
         public const float LeadingSilencePaddingSeconds = 0.5f;
         public const float TrailingSilencePaddingSeconds = 0.2f;
+        public const float DynamicCompressionFactor = 0.1f;
+        public const float PreEmphasisCoefficient = 0.85f;
         public const int BlankTokenId = 42;
         public const float ScoreErrorValue = -1f;
     }

@@ -5053,7 +5053,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &135834853
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -5099,6 +5099,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 1188799955
   m_SortingLayer: 1
   m_SortingOrder: 1000
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -5130,7 +5131,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!224 &135834854
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5996,7 +5996,7 @@ RectTransform:
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!199 &513329109
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -6042,6 +6042,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 1188799955
   m_SortingLayer: 1
   m_SortingOrder: 1000
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -6073,7 +6074,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!198 &513329110
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -11256,6 +11256,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -11392,6 +11393,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -11657,14 +11659,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1212133708}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 2
     m_Resolution: -1
@@ -11931,12 +11933,14 @@ MonoBehaviour:
   confettiParticles: {fileID: 135834852}
   penguinRectTransform: {fileID: 1717673653}
   penguinTransform: {fileID: 0}
-  passThreshold: 80
+  passThreshold: 75
   randomMinScore: 70
   randomMaxScore: 100
   feedbackSeconds: 3.5
   postPromptDelay: 0.15
   minListenSeconds: 0.25
+  micReadyTimeoutSeconds: 1.8
+  speakReadyDelaySeconds: 0.12
   bounceAmount: 50
   bounceUpSeconds: 0.5
   bounceDownSeconds: 0.5
@@ -12643,6 +12647,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -12916,6 +12921,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
