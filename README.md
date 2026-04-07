@@ -23,7 +23,7 @@ First Semester App: https://github.com/jackychen071404/EC463_Team_29_V-to-T/tree
 Voice Algorithm Sandbox App: https://github.com/daarush/SpeechTherapyAppCore
 
 ## Optional features links
-- Team Jira
+- Team Jira https://voicetotext.atlassian.net/jira/software/projects/KAN/list?jql=project%20%3D%20KAN%20ORDER%20BY%20assignee%20ASC%2C%20cf%5B10019%5D%20ASC
 - Team Confluence
 - Something else
 
