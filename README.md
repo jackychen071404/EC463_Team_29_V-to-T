@@ -17,7 +17,10 @@ This is my team
 
 ## Testing ground:
 (TODO: add other branches here)
-https://github.com/daarush/SpeechTherapyAppCore
+
+First Semester App: https://github.com/jackychen071404/EC463_Team_29_V-to-T/tree/WhisperTiny
+
+Voice Algorithm Sandbox App: https://github.com/daarush/SpeechTherapyAppCore
 
 ## Optional features links
 - Team Jira
