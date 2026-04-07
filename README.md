@@ -35,7 +35,8 @@ Our project aims to develop an algorithm that will be used in speech therapy to 
 ## Project Visualization
 This figure provides a high-level overview of the app’s logic and main process flow.
 <p align="center">
-<img src="./images/GeneralProcess_V1.drawio.png" width="50%">
+<img src="./images/<img width="1273" height="983" alt="image" src="https://github.com/user-attachments/assets/239ec196-413c-4723-a5ce-4a37c7367a0f" />
+" width="50%">
 </p>
 <p align="center">
 Figure 1: Flowchart of the app's logic
