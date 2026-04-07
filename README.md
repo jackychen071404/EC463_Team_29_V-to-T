@@ -35,7 +35,7 @@ Our project aims to develop an algorithm that will be used in speech therapy to 
 ## Project Visualization
 This figure provides a high-level overview of the app’s logic and main process flow.
 <p align="center">
-<img src="./images/"Screenshot 2026-04-07 170144.png">
+<img src="./images/Screenshot 2026-04-07 170144.png" alt="App Flowchart" width="50%">
 </p>
 <p align="center">
 Figure 1: Flowchart of the app's logic
