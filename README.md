@@ -24,9 +24,11 @@ This app presents users with words in certain categories through a friendly peng
 
 ### Frontend
 
-* [Your framework here, e.g. Unity / React / etc.]
-* UI with animated penguin guide
-* Audio recording system
+The frontend is built in Unity and is responsible for the start screen, word category selection, and guiding the speech practice experience through a character-driven interface.
+
+🧭 Category Selection
+
+The app begins with a category selection screen where users choose what type of words they want to practice (e.g., Food, Colors, Numbers).
 
 ### Backend
 
