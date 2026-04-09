@@ -26,7 +26,7 @@ This app presents users with words in certain categories through a friendly peng
 
 The frontend is built in Unity and is responsible for the start screen, word category selection, and guiding the speech practice experience through a character-driven interface.
 
-# Category Selection
+#### Category Selection
 
 The app begins with a start screen, and from there  a category selection screen where users choose what type of words they want to practice (e.g., Food, Colors, Numbers). It is a modular and expandable approach to creating categories of words to practice. 
 
