@@ -33,6 +33,36 @@ The app begins with a start screen, and from there  a category selection screen 
 * Each category is mapped to a dedicated practice scene
 * Selection is handled through a central CategorySelector.cs script
 
+#### Example: Food Practice Scene
+
+The FoodPractice scene, controlled by FoodSceneController.cs, demonstrates the core interaction loop of the app.
+
+* Guided Interaction
+A penguin character and a voice prompt prompts the user with a word (e.g., apple, pizza)
+Visual states change depending on the current word and outcome (idle, eating, reacting)
+* Audio Prompting
+Each word has an associated audio clip
+The app plays the pronunciation before enabling the microphone
+Ensures users hear the correct pronunciation first
+* Speech Input Flow
+User taps the mic to begin recording
+App waits until the microphone is ready
+User speaks the prompted word
+User taps again to stop recording
+* Feedback & Scoring
+Audio is sent to the backend for phoneme analysis
+A score (0–100%) is returned
+The app determines pass/fail using a threshold (default: 75%)
+* Success Feedback
+Positive message displayed
+Penguin reacts (e.g., eating animation)
+Sound effects or particles triggered (confetti, etc.)
+Automatically advances to the next word
+* Failure Feedback
+Encourages retry
+Plays corrective audio feedback
+Keeps the same word active
+
 ### Backend
 
 * Phoneme scoring engine (e.g. Wav2Vec2 / ONNX model)
