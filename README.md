@@ -188,7 +188,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 
 ---
 
-### (Model)[https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2] Details
+### [Model](https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2) Details
 
 * Architecture: **Wav2Vec2-Base**
 * Framework: **PyTorch (HuggingFace)**
@@ -198,7 +198,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
   * Google Cloud VM
   * NVIDIA Tesla A100 GPU
 * Training metrics tracked via **TensorBoard**
-https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2
+* 
 ---
 
 * Optimized for **phoneme recognition instead of full transcription**
