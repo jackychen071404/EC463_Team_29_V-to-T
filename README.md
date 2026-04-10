@@ -30,45 +30,97 @@ The frontend is built in Unity and is responsible for the start screen, word cat
 
 The app begins with a start screen, and from there  a category selection screen where users choose what type of words they want to practice (e.g., Food, Colors, Numbers). It is a modular and expandable approach to creating categories of words to practice. 
 
-* Each category is mapped to a dedicated practice scene
-* Selection is handled through a central CategorySelector.cs script
+* Each category is mapped to a dedicated practice scene.
+* Selection is handled through a central CategorySelector.cs script.
 
 #### Example: Food Practice Scene
 
 The FoodPractice scene, controlled by FoodSceneController.cs, demonstrates the core interaction loop of the app.
 
 * Guided Interaction
-A penguin character and a voice prompt prompts the user with a word (e.g., apple, pizza)
-Visual states change depending on the current word and outcome (idle, eating, reacting)
+A penguin character and a voice prompt prompts the user with a word (e.g., apple, pizza).
+Visual states change depending on the current word and outcome (idle, eating, reacting).
 * Audio Prompting
-Each word has an associated audio clip
-The app plays the pronunciation before enabling the microphone
-Ensures users hear the correct pronunciation first
+Each word has an associated audio clip.
+The app plays the pronunciation before enabling the microphone.
+Ensures users hear the correct pronunciation first.
 * Speech Input Flow
-User taps the mic to begin recording
-App waits until the microphone is ready
-User speaks the prompted word
-User taps again to stop recording
+User taps the mic to begin recording.
+App waits until the microphone is ready.
+User speaks the prompted word.
+User taps again to stop recording.
 * Feedback & Scoring
-Audio is sent to the backend for phoneme analysis
-A score (0–100%) is returned
-The app determines pass/fail using a threshold (default: 75%)
+Audio is sent to the backend for phoneme analysis.
+A score (0–100%) is returned.
+The app determines pass/fail using a threshold (default: 75%).
 * Success Feedback
-Positive message displayed
-Penguin reacts (e.g., eating animation)
-Sound effects or particles triggered (confetti, etc.)
-Automatically advances to the next word
+Positive message displayed.
+Penguin reacts (e.g., eating animation).
+Sound effects or particles triggered (confetti, etc.).
+Automatically advances to the next word.
 * Failure Feedback
-Encourages retry
-Plays corrective audio feedback
-Keeps the same word active
+Encourages retry.
+Plays corrective audio feedback.
+Keeps the same word active.
 
 ### Backend
 
-* Phoneme scoring engine (e.g. Wav2Vec2 / ONNX model)
-* Audio processing pipeline
-* Scoring API
+The backend handles audio recording, phoneme extraction, and pronunciation scoring. It is fully integrated within Unity and combines signal processing, a machine learning model, and a custom scoring algorithm. It is completely offline as per the client's requirements.
 
+#### Voice Recording (VoiceRecorder.cs)
+
+Responsible for capturing and saving user speech input.
+
+* Uses Unity’s Microphone API, thus has built-in cross platform usability.
+* Handles microphone initialization and device selection.
+* Records audio clips into  .wav files trimmed to the actual spoken length.
+* Stores files locally for processing, with automatic cleanup of old recordings.
+
+#### Phoneme Conversion (PhonemeConverter.cs)
+
+Converts target words into phoneme sequences for comparison.
+
+* Uses the CMU Pronouncing Dictionary containing phonemes breakdowns of words.
+* Translates ARPAbet phonemes into a simplified internal vocabulary.
+* Outputs phoneme sequences in a format compatible with the scoring engine.
+
+Example:
+
+"cow" → "k aow"
+
+#### Phoneme Scoring (PhonemeScoringEngine.cs)
+
+This is the core logic for evaluating pronunciation accuracy. It compares spoken phonemes vs target phonemes and produces a similarity score (0–100%)
+
+##### Scoring Components:
+* Edit Distance Similarity
+Token-based Levenshtein distance on phonemes.
+* Vowel Similarity
+Ensures vowel accuracy is weighted appropriately.
+* Length Penalty
+Penalizes overly short or long pronunciations.
+
+##### Smart Matching:
+
+Partial credit for similar sounds (e.g., b ↔ p, d ↔ t).
+Grouped vowel similarity (e.g., ee, i).
+
+#### Phoneme Extraction via ML (Wav2VecONNX.cs)
+
+Uses a pretrained Wav2Vec2 ONNX model to convert audio into phoneme sequences.
+
+##### Pipeline:
+* Load recorded .wav file.
+* Convert to mono audio.
+* Resample to expected frequency.
+* Normalize audio.
+* Add slight silence padding (improves model stability).
+* Run inference using Unity’s Inference Engine (GPU).
+
+Output:
+Sequence of phoneme tokens decoded using CTC (Connectionist Temporal Classification).
+
+Audio → "k aow".
 ---
 
 ## Project Structure
