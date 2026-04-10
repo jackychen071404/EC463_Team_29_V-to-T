@@ -224,10 +224,11 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 ## Project Structure
 
 ```
-/frontend        # UI and user interaction
-/backend         # Speech processing and scoring
-/models          # ML / ONNX models
 /assets          # Images, audio, penguin animations
+  /Scripts         # Both frontend and backend as described
+  /Audio
+  /Images
+  /Scenes          # Category selector and specific categories
 ```
 
 ---
