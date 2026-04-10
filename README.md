@@ -188,7 +188,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 
 ---
 
-### [Model](https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2) Details
+### [Model Details](https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2)
 
 * Architecture: **Wav2Vec2-Base**
 * Framework: **PyTorch (HuggingFace)**
