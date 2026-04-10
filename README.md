@@ -6,7 +6,7 @@ An intuitive speech therapy application that helps users practice pronunciation 
 
 ## Overview
 
-This app presents users with words in certain categories through a friendly penguin character on the frontend. Users speak the prompted word upon voocal prompting and a button press. The backend analyzes their pronunciation using phoneme scoring to provide feedback.
+This app presents users with words in certain categories through a friendly penguin character on the frontend. Users speak the prompted word upon vocal prompting and a button press. The backend analyzes their pronunciation using phoneme scoring to provide feedback.
 
 ---
 
@@ -22,13 +22,13 @@ This app presents users with words in certain categories through a friendly peng
 
 ## Tech Stack
 
-### Frontend
+## Frontend
 
 The frontend is built in Unity and is responsible for the start screen, word category selection, and guiding the speech practice experience through a character-driven interface.
 
 #### Category Selection
 
-The app begins with a start screen, and from there  a category selection screen where users choose what type of words they want to practice (e.g., Food, Colors, Numbers). It is a modular and expandable approach to creating categories of words to practice. 
+The app begins with a start screen, and from there a category selection screen where users choose what type of words they want to practice (e.g., Food, Colors, Numbers). It is a modular and expandable approach to creating categories of words to practice.
 
 * Each category is mapped to a dedicated practice scene.
 * Selection is handled through a central CategorySelector.cs script.
@@ -38,32 +38,39 @@ The app begins with a start screen, and from there  a category selection screen 
 The FoodPractice scene, controlled by FoodSceneController.cs, demonstrates the core interaction loop of the app.
 
 * Guided Interaction
-A penguin character and a voice prompt prompts the user with a word (e.g., apple, pizza).
-Visual states change depending on the current word and outcome (idle, eating, reacting).
-* Audio Prompting
-Each word has an associated audio clip.
-The app plays the pronunciation before enabling the microphone.
-Ensures users hear the correct pronunciation first.
-* Speech Input Flow
-User taps the mic to begin recording.
-App waits until the microphone is ready.
-User speaks the prompted word.
-User taps again to stop recording.
-* Feedback & Scoring
-Audio is sent to the backend for phoneme analysis.
-A score (0–100%) is returned.
-The app determines pass/fail using a threshold (default: 75%).
-* Success Feedback
-Positive message displayed.
-Penguin reacts (e.g., eating animation).
-Sound effects or particles triggered (confetti, etc.).
-Automatically advances to the next word.
-* Failure Feedback
-Encourages retry.
-Plays corrective audio feedback.
-Keeps the same word active.
+  A penguin character and a voice prompt prompts the user with a word (e.g., apple, pizza).
+  Visual states change depending on the current word and outcome (idle, eating, reacting).
 
-### Backend
+* Audio Prompting
+  Each word has an associated audio clip.
+  The app plays the pronunciation before enabling the microphone.
+  Ensures users hear the correct pronunciation first.
+
+* Speech Input Flow
+  User taps the mic to begin recording.
+  App waits until the microphone is ready.
+  User speaks the prompted word.
+  User taps again to stop recording.
+
+* Feedback & Scoring
+  Audio is sent to the backend for phoneme analysis.
+  A score (0–100%) is returned.
+  The app determines pass/fail using a threshold (default: 75%).
+
+* Success Feedback
+  Positive message displayed.
+  Penguin reacts (e.g., eating animation).
+  Sound effects or particles triggered (confetti, etc.).
+  Automatically advances to the next word.
+
+* Failure Feedback
+  Encourages retry.
+  Plays corrective audio feedback.
+  Keeps the same word active.
+
+---
+
+## Backend
 
 The backend handles audio recording, phoneme extraction, and pronunciation scoring. It is fully integrated within Unity and combines signal processing, a machine learning model, and a custom scoring algorithm. It is completely offline as per the client's requirements.
 
@@ -73,14 +80,14 @@ Responsible for capturing and saving user speech input.
 
 * Uses Unity’s Microphone API, thus has built-in cross platform usability.
 * Handles microphone initialization and device selection.
-* Records audio clips into  .wav files trimmed to the actual spoken length.
+* Records audio clips into `.wav` files trimmed to the actual spoken length.
 * Stores files locally for processing, with automatic cleanup of old recordings.
 
 #### Phoneme Conversion (PhonemeConverter.cs)
 
 Converts target words into phoneme sequences for comparison.
 
-* Uses the CMU Pronouncing Dictionary containing phonemes breakdowns of words.
+* Uses the CMU Pronouncing Dictionary containing phoneme breakdowns of words.
 * Translates ARPAbet phonemes into a simplified internal vocabulary.
 * Outputs phoneme sequences in a format compatible with the scoring engine.
 
@@ -90,45 +97,49 @@ Example:
 
 #### Phoneme Scoring (PhonemeScoringEngine.cs)
 
-This is the core logic for evaluating pronunciation accuracy. It compares spoken phonemes vs target phonemes and produces a similarity score (0–100%)
+This is the core logic for evaluating pronunciation accuracy. It compares spoken phonemes vs target phonemes and produces a similarity score (0–100%).
 
 ##### Scoring Components:
-* Edit Distance Similarity
-Token-based Levenshtein distance on phonemes.
-* Vowel Similarity
-Ensures vowel accuracy is weighted appropriately.
-* Length Penalty
-Penalizes overly short or long pronunciations.
+
+* Edit Distance Similarity — Token-based Levenshtein distance on phonemes
+* Vowel Similarity — Ensures vowel accuracy is weighted appropriately
+* Length Penalty — Penalizes overly short or long pronunciations
 
 ##### Smart Matching:
 
-Partial credit for similar sounds (e.g., b ↔ p, d ↔ t).
-Grouped vowel similarity (e.g., ee, i).
+* Partial credit for similar sounds (e.g., b ↔ p, d ↔ t)
+* Grouped vowel similarity (e.g., ee, i)
 
 #### Phoneme Extraction via ML (Wav2VecONNX.cs)
 
 Uses a pretrained Wav2Vec2 ONNX model to convert audio into phoneme sequences.
 
 ##### Pipeline:
-* Load recorded .wav file.
-* Convert to mono audio.
-* Resample to expected frequency.
-* Normalize audio.
-* Add slight silence padding (improves model stability).
-* Run inference using Unity’s Inference Engine (GPU).
+
+* Load recorded `.wav` file
+* Convert to mono audio
+* Resample to expected frequency
+* Normalize audio
+* Add slight silence padding (improves model stability)
+* Run inference using Unity’s Inference Engine (GPU)
 
 Output:
 Sequence of phoneme tokens decoded using CTC (Connectionist Temporal Classification).
+
+---
 
 ## CMU Pronouncing Dictionary (cmudict)
 
 The CMU Pronouncing Dictionary is used as the foundation for converting words into phoneme sequences for scoring.
 
 * A widely used pronunciation dictionary for North American English
+
 * Maps words to their phonetic representations using **ARPAbet**
+
 * Provides standardized phoneme breakdowns for thousands of words
 
 * Supplies the **target phoneme sequence** for each prompted word
+
 * Enables consistent comparison between:
 
   * Expected pronunciation (dictionary)
@@ -144,6 +155,8 @@ The CMU Pronouncing Dictionary is used as the foundation for converting words in
 * Ensures linguistic consistency across all words
 * Lightweight and fully offline
 * Easily extendable with custom word entries if needed
+
+---
 
 ## ONNX Model: Wav2Vec2 LJSpeech Gruut
 
@@ -198,7 +211,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
   * Google Cloud VM
   * NVIDIA Tesla A100 GPU
 * Training metrics tracked via **TensorBoard**
-* 
+
 ---
 
 * Optimized for **phoneme recognition instead of full transcription**
@@ -218,4 +231,3 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 ```
 
 ---
-
