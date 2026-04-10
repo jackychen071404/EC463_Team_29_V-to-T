@@ -120,6 +120,92 @@ Uses a pretrained Wav2Vec2 ONNX model to convert audio into phoneme sequences.
 Output:
 Sequence of phoneme tokens decoded using CTC (Connectionist Temporal Classification).
 
+## CMU Pronouncing Dictionary (cmudict)
+
+The CMU Pronouncing Dictionary is used as the foundation for converting words into phoneme sequences for scoring.
+
+* A widely used pronunciation dictionary for North American English
+* Maps words to their phonetic representations using **ARPAbet**
+* Provides standardized phoneme breakdowns for thousands of words
+
+* Supplies the **target phoneme sequence** for each prompted word
+* Enables consistent comparison between:
+
+  * Expected pronunciation (dictionary)
+  * Actual pronunciation (model output)
+
+### Processing Pipeline
+
+1. A word is selected (e.g., *cow*)
+2. The dictionary returns its phoneme sequence
+3. ARPAbet phonemes are converted into a simplified internal format
+4. Output is passed to the scoring engine
+
+* Ensures linguistic consistency across all words
+* Lightweight and fully offline
+* Easily extendable with custom word entries if needed
+
+## ONNX Model: Wav2Vec2 LJSpeech Gruut
+
+This project uses a pretrained **Wav2Vec2-based ONNX model** for phoneme-level speech recognition.
+
+### Overview
+
+Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **wav2vec 2.0 architecture**.
+
+* Fine-tuned on the **LJSpeech Phoneme dataset**
+* Designed to predict **phoneme sequences instead of words**
+* Outputs phonemes using an **IPA-based vocabulary (gruut)**
+
+**Example output:**
+
+```
+["h", "ɛ", "l", "ˈoʊ", "w", "ˈɚ", "l", "d"]
+```
+
+---
+
+### ⚙️ Role in the App
+
+* Converts recorded user speech into phoneme sequences
+* Serves as the **bridge between raw audio and scoring logic**
+* Enables pronunciation evaluation at a fine-grained phonetic level
+
+---
+
+### 🔄 Inference Pipeline
+
+1. Input `.wav` audio from the recorder
+2. Preprocessing:
+
+   * Convert to mono
+   * Resample to expected frequency
+   * Normalize audio
+   * Add silence padding
+3. Run inference using Unity’s Inference Engine (GPU)
+4. Decode output using **CTC (Connectionist Temporal Classification)**
+5. Produce phoneme sequence for scoring
+
+---
+
+### (Model)[https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2] Details
+
+* Architecture: **Wav2Vec2-Base**
+* Framework: **PyTorch (HuggingFace)**
+* Training Dataset: **LJSpeech Phonemes**
+* Training Environment:
+
+  * Google Cloud VM
+  * NVIDIA Tesla A100 GPU
+* Training metrics tracked via **TensorBoard**
+https://huggingface.co/ct-vikramanantha/phoneme-scorer-v2-wav2vec2
+---
+
+* Optimized for **phoneme recognition instead of full transcription**
+* Fully offline inference (no API calls required)
+* ONNX format enables efficient deployment within Unity
+* Works seamlessly with the custom phoneme scoring pipeline
+
 ---
 
 ## Project Structure
