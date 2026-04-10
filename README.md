@@ -120,7 +120,6 @@ Uses a pretrained Wav2Vec2 ONNX model to convert audio into phoneme sequences.
 Output:
 Sequence of phoneme tokens decoded using CTC (Connectionist Temporal Classification).
 
-Audio → "k aow".
 ---
 
 ## Project Structure
