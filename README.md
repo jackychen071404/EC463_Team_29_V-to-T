@@ -165,7 +165,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 
 ---
 
-### ⚙️ Role in the App
+### Role in the App
 
 * Converts recorded user speech into phoneme sequences
 * Serves as the **bridge between raw audio and scoring logic**
@@ -173,7 +173,7 @@ Wav2Vec2 LJSpeech Gruut is an automatic speech recognition model based on the **
 
 ---
 
-### 🔄 Inference Pipeline
+### Inference Pipeline
 
 1. Input `.wav` audio from the recorder
 2. Preprocessing:
