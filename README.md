@@ -1,11 +1,10 @@
-# 02-Team Repo
-Template for team repo
+# EC463 Team 29: Voice-to-Text Speech Therapy App
 
 <p align="center">
 <img src="./images/Team 29.jpg" width="50%">
 </p>
 <p align="center">
-This is my team
+Denalda Gashi, Isaac Williams, Yuhao Liang, Zonggyu Zhang, Aarush Duvvuri, Jacky Chen 
 </p>
 
 ## Team links
